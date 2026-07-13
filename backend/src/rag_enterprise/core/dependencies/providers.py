@@ -12,8 +12,13 @@ from typing import Annotated
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
+from rag_enterprise.application.commands.dispatcher import CommandDispatcher
+from rag_enterprise.application.interfaces.file_storage import FileStorage
+from rag_enterprise.application.queries.dispatcher import QueryDispatcher
 from rag_enterprise.core.config.settings import Settings, get_settings
 from rag_enterprise.db.session.factory import create_engine_and_session_factory
+from rag_enterprise.knowledge.infrastructure.storage import InMemoryFileStorage
+from rag_enterprise.knowledge.registration import register_knowledge_handlers
 
 
 @dataclass
@@ -23,6 +28,9 @@ class AppContainer:
     settings: Settings
     engine: AsyncEngine | None = None
     session_factory: async_sessionmaker[AsyncSession] | None = None
+    file_storage: FileStorage | None = None
+    command_dispatcher: CommandDispatcher = field(default_factory=CommandDispatcher)
+    query_dispatcher: QueryDispatcher = field(default_factory=QueryDispatcher)
     # TODO: Add Redis client when caching layer is integrated
     # TODO: Add AI/embedding service providers when RAG layer is integrated
     _initialized: bool = field(default=False, repr=False)
@@ -35,6 +43,14 @@ class AppContainer:
         self.engine, self.session_factory = create_engine_and_session_factory(
             self.settings.database
         )
+        self.file_storage = InMemoryFileStorage()
+        if self.session_factory is not None:
+            register_knowledge_handlers(
+                command_dispatcher=self.command_dispatcher,
+                query_dispatcher=self.query_dispatcher,
+                session_factory=self.session_factory,
+                file_storage=self.file_storage,
+            )
         # TODO: Wire Redis connection
         self._initialized = True
 
@@ -47,6 +63,7 @@ class AppContainer:
             await self.engine.dispose()
             self.engine = None
             self.session_factory = None
+            self.file_storage = None
 
         # TODO: Close Redis connection
         self._initialized = False

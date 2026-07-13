@@ -1,7 +1,7 @@
 # Knowledge Management
 
 > **Spec ID:** 001  
-> **Status:** Draft — architecture and specification only  
+> **Status:** Approved — implemented in `backend/src/rag_enterprise/knowledge/`  
 > **Bounded context:** Knowledge Content  
 > **Authority:** Implements approved domain and data architecture
 

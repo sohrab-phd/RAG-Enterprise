@@ -1,0 +1,79 @@
+# Knowledge Management Implementation
+
+> **Status:** Implemented per `specs/001-knowledge-management/`  
+> **Module:** `backend/src/rag_enterprise/knowledge/`
+
+## Overview
+
+Feature 001 delivers workspace-scoped knowledge base administration, folder hierarchy,
+document lifecycle, upload sessions, and document versioning. Chunking, embeddings,
+retrieval, and chat are intentionally excluded.
+
+## Package layout
+
+```text
+knowledge/
+  models.py              SQLAlchemy ORM models
+  enums.py               Domain enumerations
+  commands.py            Write-side commands
+  queries.py             Read-side queries
+  dto.py                 Request/response DTOs
+  handlers/              Command and query handlers
+  repositories/          Tenant-scoped repositories
+  unit_of_work.py        KnowledgeUnitOfWork
+  registration.py        Dispatcher registration
+  api/routes.py          FastAPI endpoints
+  infrastructure/        In-memory file storage (dev/test)
+```
+
+## API surface
+
+Base path: `/api/v1/workspaces/{workspace_id}/knowledge-bases/...`
+
+Responses use the platform `SuccessEnvelope` and `PaginatedEnvelope` contracts.
+
+### Development authentication
+
+Until identity is implemented, pass actor headers:
+
+| Header | Purpose |
+| --- | --- |
+| `X-User-Id` | Acting user UUID |
+| `X-Organization-Id` | Tenant organization UUID |
+
+All knowledge permissions are granted when both headers are present (development stub).
+
+## Persistence
+
+- ORM models: `KnowledgeBase`, `Folder`, `Document`, `DocumentVersion`, `UploadSession`
+- Migration: `alembic/versions/001_initial_knowledge.py`
+- UUIDv7 primary keys, soft delete on KB/folder/document, optimistic `row_version`
+
+Run migrations:
+
+```bash
+cd backend
+uv run alembic upgrade head
+```
+
+## Application flow
+
+1. FastAPI route validates request DTO
+2. Command/query dispatched through application layer
+3. Handler uses `KnowledgeUnitOfWork` for transaction boundary
+4. Handler returns `Result[T]`; routes map failures to `ApplicationException`
+
+## Testing
+
+Tests live in `backend/tests/knowledge/`:
+
+- Repository tenant and soft-delete filtering
+- Command handler unit tests
+- API integration tests (SQLite in-memory)
+
+## Related documents
+
+- [specs/001-knowledge-management/README.md](../../specs/001-knowledge-management/README.md)
+- [API Foundation](API_FOUNDATION.md)
+- [Application Layer](APPLICATION_LAYER.md)
+- [Persistence Layer](PERSISTENCE_LAYER.md)

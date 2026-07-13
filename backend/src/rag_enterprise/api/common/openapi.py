@@ -17,8 +17,24 @@ OPENAPI_TAGS: list[dict[str, str]] = [
         "description": "Service health and readiness probes.",
     },
     {
-        "name": "system",
-        "description": "Platform metadata and operational endpoints.",
+        "name": "knowledge-bases",
+        "description": "Knowledge base administration.",
+    },
+    {
+        "name": "folders",
+        "description": "Folder hierarchy operations.",
+    },
+    {
+        "name": "documents",
+        "description": "Document lifecycle and metadata.",
+    },
+    {
+        "name": "uploads",
+        "description": "Upload session management.",
+    },
+    {
+        "name": "document-versions",
+        "description": "Document version history.",
     },
 ]
 
