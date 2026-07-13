@@ -1,7 +1,7 @@
 # Retrieval
 
 > **Spec ID:** 005  
-> **Status:** Draft  
+> **Status:** Implemented  
 > **Goal:** Given a user question, retrieve the most relevant chunks from authorized knowledge.  
 > **Scope:** Dense vector search over pgvector with metadata filtering only.
 

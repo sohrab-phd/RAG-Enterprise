@@ -52,6 +52,19 @@ class Settings(BaseSettings):
     redis_port: int = 6379
     redis_url: RedisDsn | None = None
 
+    # Embeddings / retrieval
+    embedding_backend: Literal["deterministic", "flag"] = Field(
+        default="deterministic",
+        validation_alias="EMBEDDING_BACKEND",
+    )
+    embedding_model_key: str = Field(
+        default="BAAI/bge-m3",
+        validation_alias="EMBEDDING_MODEL_KEY",
+    )
+    embedding_dimensions: int = Field(default=1024, validation_alias="EMBEDDING_DIMENSIONS")
+    embedding_batch_size: int = Field(default=32, validation_alias="EMBEDDING_BATCH_SIZE")
+    retrieval_default_top_k: int = Field(default=8, validation_alias="RETRIEVAL_DEFAULT_TOP_K")
+
     @model_validator(mode="before")
     @classmethod
     def assemble_database_settings(cls, data: Any) -> Any:

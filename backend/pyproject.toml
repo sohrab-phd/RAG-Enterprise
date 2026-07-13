@@ -20,6 +20,7 @@ dependencies = [
     "python-docx>=1.2.0",
     "beautifulsoup4>=4.15.0",
     "lingua-language-detector>=2.2.0",
+    "pgvector>=0.5.0",
 ]
 
 [project.optional-dependencies]
@@ -86,7 +87,7 @@ module = ["rag_enterprise.knowledge.api.routes"]
 disable_error_code = ["var-annotated"]
 
 [[tool.mypy.overrides]]
-module = ["fitz", "bs4", "docx", "lingua"]
+module = ["fitz", "bs4", "docx", "lingua", "FlagEmbedding", "pgvector", "pgvector.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

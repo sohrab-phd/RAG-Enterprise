@@ -36,6 +36,10 @@ OPENAPI_TAGS: list[dict[str, str]] = [
         "name": "document-versions",
         "description": "Document version history.",
     },
+    {
+        "name": "retrieval",
+        "description": "Dense vector retrieval over indexed knowledge bases.",
+    },
 ]
 
 

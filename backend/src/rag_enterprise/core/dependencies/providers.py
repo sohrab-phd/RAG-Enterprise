@@ -1,7 +1,6 @@
 """Application container and FastAPI Depends providers.
 
-This module establishes the DI pattern for future services (database sessions,
-Redis clients, AI pipelines, etc.) without implementing business logic.
+This module establishes the DI pattern for application-wide dependencies.
 """
 
 from collections.abc import AsyncIterator
@@ -13,12 +12,16 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from rag_enterprise.application.commands.dispatcher import CommandDispatcher
+from rag_enterprise.application.interfaces.embedding import EmbeddingProvider
 from rag_enterprise.application.interfaces.file_storage import FileStorage
 from rag_enterprise.application.queries.dispatcher import QueryDispatcher
 from rag_enterprise.core.config.settings import Settings, get_settings
 from rag_enterprise.db.session.factory import create_engine_and_session_factory
+from rag_enterprise.indexing.providers import BgeM3EmbeddingProvider
+from rag_enterprise.indexing.service import IndexingService
 from rag_enterprise.knowledge.infrastructure.storage import InMemoryFileStorage
 from rag_enterprise.knowledge.registration import register_knowledge_handlers
+from rag_enterprise.retrieval.service import RetrievalService
 
 
 @dataclass
@@ -29,10 +32,11 @@ class AppContainer:
     engine: AsyncEngine | None = None
     session_factory: async_sessionmaker[AsyncSession] | None = None
     file_storage: FileStorage | None = None
+    embedding_provider: EmbeddingProvider | None = None
+    indexing_service: IndexingService | None = None
+    retrieval_service: RetrievalService | None = None
     command_dispatcher: CommandDispatcher = field(default_factory=CommandDispatcher)
     query_dispatcher: QueryDispatcher = field(default_factory=QueryDispatcher)
-    # TODO: Add Redis client when caching layer is integrated
-    # TODO: Add AI/embedding service providers when RAG layer is integrated
     _initialized: bool = field(default=False, repr=False)
 
     async def initialize(self) -> None:
@@ -44,6 +48,11 @@ class AppContainer:
             self.settings.database
         )
         self.file_storage = InMemoryFileStorage()
+        self.embedding_provider = BgeM3EmbeddingProvider(
+            mode=self.settings.embedding_backend,
+            model_key=self.settings.embedding_model_key,
+            dimensions=self.settings.embedding_dimensions,
+        )
         if self.session_factory is not None:
             register_knowledge_handlers(
                 command_dispatcher=self.command_dispatcher,
@@ -51,7 +60,16 @@ class AppContainer:
                 session_factory=self.session_factory,
                 file_storage=self.file_storage,
             )
-        # TODO: Wire Redis connection
+            self.indexing_service = IndexingService(
+                session_factory=self.session_factory,
+                embedding_provider=self.embedding_provider,
+                batch_size=self.settings.embedding_batch_size,
+                retry_delays_seconds=(0.0, 0.0, 0.0),
+            )
+            self.retrieval_service = RetrievalService(
+                session_factory=self.session_factory,
+                embedding_provider=self.embedding_provider,
+            )
         self._initialized = True
 
     async def shutdown(self) -> None:
@@ -64,8 +82,10 @@ class AppContainer:
             self.engine = None
             self.session_factory = None
             self.file_storage = None
+            self.embedding_provider = None
+            self.indexing_service = None
+            self.retrieval_service = None
 
-        # TODO: Close Redis connection
         self._initialized = False
 
 

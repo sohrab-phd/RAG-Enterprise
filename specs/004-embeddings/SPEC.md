@@ -1,7 +1,7 @@
 # Embeddings & Indexing
 
 > **Spec ID:** 004  
-> **Status:** Draft  
+> **Status:** Implemented  
 > **Goal:** Convert chunks into vectors and persist them in PostgreSQL (pgvector) for future retrieval.  
 > **Scope:** Embedding generation and vector persistence only — no retrieval, chat, or reranking.
 

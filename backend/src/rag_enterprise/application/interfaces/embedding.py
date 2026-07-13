@@ -17,4 +17,7 @@ class EmbeddingProvider(Protocol):
         """Return the embedding vector dimensions."""
 
     async def embed_texts(self, texts: list[str]) -> list[list[float]]:
-        """Generate embeddings for a batch of texts."""
+        """Generate embeddings for a batch of document texts."""
+
+    async def embed_query(self, text: str) -> list[float]:
+        """Generate a single query embedding for retrieval."""
