@@ -1,0 +1,27 @@
+---
+description: RAG-enterprise engineering governance entry point
+alwaysApply: true
+---
+
+# RAG-enterprise Governance
+
+Before changing the repository, read the rule documents relevant to the task:
+
+- `.cursor/rules/architecture.md` for boundaries and dependency direction.
+- `.cursor/rules/coding-standards.md` for all implementation work.
+- `.cursor/rules/python.md` for `backend/**/*.py` and backend configuration.
+- `.cursor/rules/frontend.md` for `frontend/**/*.{ts,tsx,css}`.
+- `.cursor/rules/testing.md` whenever behavior or tests change.
+- `.cursor/rules/security.md` for every change involving input, data, identity,
+  dependencies, infrastructure, external systems, or AI.
+- `.cursor/rules/documentation.md` for docs, specs, ADRs, and public contracts.
+- `.cursor/rules/git.md` for branches, commits, pull requests, and releases.
+- `.cursor/rules/ai-engineering.md` for RAG, models, prompts, embeddings, retrieval,
+  LangGraph, tools, and evaluations.
+
+Approved ADRs in `docs/adr/` are authoritative. Follow the specialized operating
+boundaries in `agents/` when acting in one of those roles.
+
+Do not implement unapproved business behavior. Preserve modular architecture,
+dependency injection, strict typing, security-by-default, observability, and
+behavioral tests. Never commit secrets or sensitive production data.

@@ -1,58 +1,38 @@
-# Architecture Decision Records (ADR)
+# Architecture Decision Records
 
-> **Status:** Draft skeleton — TODO: add ADRs as decisions are made.
+Architecture Decision Records (ADRs) capture durable, cross-cutting, or
+difficult-to-reverse technical decisions for RAG-enterprise. Detailed records live
+in [`docs/adr/`](adr/).
 
-## Format
+## Decision index
 
-Each decision should follow this template:
+| ADR | Decision | Status |
+| --- | --- | --- |
+| [001](adr/001-monorepo-architecture.md) | Monorepo Architecture | Accepted |
+| [002](adr/002-backend-framework-selection.md) | Backend Framework Selection | Accepted |
+| [003](adr/003-database-selection.md) | Database Selection | Accepted |
+| [004](adr/004-frontend-selection.md) | Frontend Selection | Accepted |
+| [005](adr/005-ai-platform-principles.md) | AI Platform Principles | Accepted |
 
-1. **Title** — Short descriptive name
-2. **Status** — Proposed | Accepted | Deprecated | Superseded
-3. **Context** — What problem are we solving?
-4. **Decision** — What did we decide?
-5. **Consequences** — Trade-offs and follow-up work
+## Lifecycle
 
----
+1. Use the next zero-padded sequence number and a lowercase kebab-case filename.
+2. Include Status, Date, Context, Decision, Alternatives considered, and Consequences.
+3. Open new records as **Proposed** and obtain relevant architecture, security, data,
+   infrastructure, and AI reviews.
+4. Change the status to **Accepted** when approved.
+5. Do not rewrite accepted history to conceal a changed decision. Add a new ADR,
+   mark the old record **Superseded**, and link the records in both directions.
+6. Use **Deprecated** when a decision is no longer recommended but has not been
+   superseded by a single replacement.
 
-## ADR-001: Monorepo Structure
+## When an ADR is required
 
-**Status:** Accepted
+- A new framework, datastore, protocol, deployment unit, or major dependency.
+- A change to module boundaries, dependency direction, ownership, or data authority.
+- A security, tenancy, compliance, or retention model decision.
+- A public API, event, schema, model, prompt, embedding, or index versioning strategy.
+- A choice with material migration, operational, scalability, cost, or lock-in impact.
 
-**Context:** RAG-enterprise requires coordinated backend, frontend, and infrastructure development.
-
-**Decision:** Use a single monorepo with clear top-level boundaries (`backend/`, `frontend/`, `infrastructure/`).
-
-**Consequences:** Simplifies local development and cross-cutting changes; requires disciplined CI and ownership boundaries.
-
----
-
-## ADR-002: uv for Python Dependency Management
-
-**Status:** Accepted
-
-**Context:** Need reproducible, fast Python environments for enterprise development.
-
-**Decision:** Use `uv` with `backend/.venv` (not a root virtual environment) and src layout.
-
-**Consequences:** Developers must use `uv` commands in `backend/`; CI must mirror this setup.
-
----
-
-## ADR-003: API Versioning
-
-**Status:** Accepted
-
-**Context:** Enterprise APIs require stable contracts and migration paths.
-
-**Decision:** Version APIs under `/api/v1` from the start.
-
-**Consequences:** Breaking changes require new version namespaces.
-
----
-
-## Future ADRs
-
-<!-- TODO: ADR-004 Database access pattern (SQLAlchemy 2 async) -->
-<!-- TODO: ADR-005 Authentication strategy -->
-<!-- TODO: ADR-006 RAG pipeline architecture -->
-<!-- TODO: ADR-007 Deployment platform -->
+Routine implementation details that follow existing ADRs belong in feature
+specifications or code review, not in a new ADR.
