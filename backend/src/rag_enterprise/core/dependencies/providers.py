@@ -10,8 +10,10 @@ from dataclasses import dataclass, field
 from typing import Annotated
 
 from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from rag_enterprise.core.config.settings import Settings, get_settings
+from rag_enterprise.db.session.factory import create_engine_and_session_factory
 
 
 @dataclass
@@ -19,7 +21,8 @@ class AppContainer:
     """Lightweight service container for application-wide dependencies."""
 
     settings: Settings
-    # TODO: Add database session factory when SQLAlchemy is integrated
+    engine: AsyncEngine | None = None
+    session_factory: async_sessionmaker[AsyncSession] | None = None
     # TODO: Add Redis client when caching layer is integrated
     # TODO: Add AI/embedding service providers when RAG layer is integrated
     _initialized: bool = field(default=False, repr=False)
@@ -28,7 +31,10 @@ class AppContainer:
         """Initialize external resources during application startup."""
         if self._initialized:
             return
-        # TODO: Wire database connection pool
+
+        self.engine, self.session_factory = create_engine_and_session_factory(
+            self.settings.database
+        )
         # TODO: Wire Redis connection
         self._initialized = True
 
@@ -36,7 +42,12 @@ class AppContainer:
         """Release external resources during application shutdown."""
         if not self._initialized:
             return
-        # TODO: Close database connection pool
+
+        if self.engine is not None:
+            await self.engine.dispose()
+            self.engine = None
+            self.session_factory = None
+
         # TODO: Close Redis connection
         self._initialized = False
 

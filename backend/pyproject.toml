@@ -13,6 +13,8 @@ dependencies = [
     "pydantic>=2.10.0",
     "pydantic-settings>=2.6.0",
     "structlog>=24.4.0",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "asyncpg>=0.30.0",
 ]
 
 [project.optional-dependencies]
@@ -22,6 +24,7 @@ dev = [
     "httpx>=0.28.0",
     "ruff>=0.8.0",
     "mypy>=1.13.0",
+    "aiosqlite>=0.20.0",
 ]
 
 [build-system]
@@ -38,6 +41,7 @@ dev = [
     "httpx>=0.28.0",
     "ruff>=0.8.0",
     "mypy>=1.13.0",
+    "aiosqlite>=0.20.0",
 ]
 
 [tool.ruff]
