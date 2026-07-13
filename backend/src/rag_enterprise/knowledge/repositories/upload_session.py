@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import uuid
-
 from typing import cast
 
 from sqlalchemy import select

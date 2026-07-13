@@ -8,7 +8,6 @@ from fastapi import APIRouter, Query, Request, Response, status
 
 from rag_enterprise.api.common.pagination import PaginatedEnvelope, paginated_response
 from rag_enterprise.api.common.responses import SuccessEnvelope, success_response
-from rag_enterprise.application.common import Result
 from rag_enterprise.knowledge import commands as cmd
 from rag_enterprise.knowledge import queries as qry
 from rag_enterprise.knowledge.api.dependencies import (

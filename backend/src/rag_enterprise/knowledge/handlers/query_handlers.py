@@ -7,7 +7,6 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from rag_enterprise.application.common import Result
-from rag_enterprise.application.common import Result
 from rag_enterprise.application.dto.base import PaginationDTO
 from rag_enterprise.knowledge import queries as qry
 from rag_enterprise.knowledge.authorization import not_found, require_permission
