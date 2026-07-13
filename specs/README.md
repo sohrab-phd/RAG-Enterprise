@@ -46,6 +46,7 @@ Draft | Review | Approved | Implemented
 
 | Spec | Description | Status |
 |------|-------------|--------|
+| [001-knowledge-management](001-knowledge-management/README.md) | Knowledge bases, folders, documents, uploads, and versioning | Draft |
 | `authentication.md` | User authentication and session management | TODO |
 | `document-ingestion.md` | Upload, parse, and chunk documents | TODO |
 | `vector-search.md` | Embedding storage and similarity search | TODO |
