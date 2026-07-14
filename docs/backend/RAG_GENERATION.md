@@ -87,8 +87,13 @@ Timeout: `LLM_TIMEOUT_SECONDS` (default 60s).
 | --- | --- |
 | `LLM_BACKEND` | `echo` |
 | `LLM_MODEL_KEY` | `gpt-4o-mini` |
+| `LLM_BASE_URL` | unset (required when `LLM_BACKEND=http`) |
+| `LLM_API_KEY` | unset (required when `LLM_BACKEND=http`; not required for `echo`) |
 | `GENERATION_MIN_EVIDENCE_SCORE` | `0.25` |
 | `GENERATION_MAX_HISTORY_MESSAGES` | `6` |
+
+Startup validation enforces the API-key / base-URL rules for `http` vs `echo`.
+See [CONFIGURATION.md](CONFIGURATION.md).
 
 ## Auth headers
 

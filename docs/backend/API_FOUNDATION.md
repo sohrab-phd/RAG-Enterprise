@@ -147,4 +147,5 @@ API foundation tests live in `backend/tests/api/common/` and cover:
 
 - [Application Layer](APPLICATION_LAYER.md)
 - [Persistence Layer](PERSISTENCE_LAYER.md)
+- [Configuration Validation (RC1.1)](CONFIGURATION.md)
 - [Architecture Rules](../../.cursor/rules/architecture.md)

@@ -149,6 +149,9 @@ Database settings live in:
 - `rag_enterprise.core.config.database.DatabaseSettings`
 - `rag_enterprise.core.config.settings.Settings`
 
+Startup validation (RC1.1) checks pool sizes, port range, and URL shape before the
+engine is created. See [CONFIGURATION.md](CONFIGURATION.md).
+
 Supported environment variables:
 
 | Variable | Purpose |

@@ -57,6 +57,9 @@ Behavior:
 
 Prerequisite: `DocumentVersion.processing_status = chunked` with `chunk` rows persisted.
 
+Configuration for embedding backends and dimensions is validated at process
+startup. See [CONFIGURATION.md](CONFIGURATION.md).
+
 ## Retrieval API
 
 `POST /api/v1/workspaces/{workspace_id}/retrieve`

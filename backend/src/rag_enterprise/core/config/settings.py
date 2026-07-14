@@ -91,6 +91,20 @@ class Settings(BaseSettings):
         validation_alias="EVALUATION_STORAGE_ROOT",
     )
 
+    # Upload limits (ops-validated at startup; defaults match knowledge constants)
+    upload_max_file_size_bytes: int = Field(
+        default=50 * 1024 * 1024,
+        validation_alias="UPLOAD_MAX_FILE_SIZE_BYTES",
+    )
+    upload_max_bulk_files: int = Field(
+        default=100,
+        validation_alias="UPLOAD_MAX_BULK_FILES",
+    )
+    upload_session_ttl_hours: int = Field(
+        default=24,
+        validation_alias="UPLOAD_SESSION_TTL_HOURS",
+    )
+
     @model_validator(mode="before")
     @classmethod
     def assemble_database_settings(cls, data: Any) -> Any:

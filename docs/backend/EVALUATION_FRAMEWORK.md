@@ -58,6 +58,9 @@ immutable; edits require a new version.
 
 No database tables in v1.
 
+Startup configuration validation ensures `EVALUATION_STORAGE_ROOT` exists or is
+created before the API accepts traffic. See [CONFIGURATION.md](CONFIGURATION.md).
+
 ## Metrics (v1)
 
 | Layer | Metrics |

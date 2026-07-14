@@ -16,7 +16,18 @@
 
 ## 4. Backend Architecture
 
-<!-- TODO: FastAPI layers, DI container, API versioning, lifespan -->
+FastAPI application factory (`rag_enterprise.main.create_app`) wires middleware,
+exception handlers, OpenAPI, and the `/api/v1` router. Process lifecycle is owned
+by `rag_enterprise.lifespan.lifespan`:
+
+1. Load `Settings`.
+2. Run RC1.1 configuration validation (fail fast with grouped stderr report).
+3. Configure structured logging.
+4. Initialize `AppContainer` (DB engine, providers, domain services).
+5. Serve requests; dispose resources on shutdown.
+
+See [CONFIGURATION.md](backend/CONFIGURATION.md) and
+[API Foundation](backend/API_FOUNDATION.md).
 
 ## 5. Frontend Architecture
 
