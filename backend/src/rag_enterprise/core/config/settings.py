@@ -65,6 +65,26 @@ class Settings(BaseSettings):
     embedding_batch_size: int = Field(default=32, validation_alias="EMBEDDING_BATCH_SIZE")
     retrieval_default_top_k: int = Field(default=8, validation_alias="RETRIEVAL_DEFAULT_TOP_K")
 
+    # LLM / generation
+    llm_backend: Literal["echo", "http"] = Field(
+        default="echo",
+        validation_alias="LLM_BACKEND",
+    )
+    llm_model_key: str = Field(default="gpt-4o-mini", validation_alias="LLM_MODEL_KEY")
+    llm_base_url: str | None = Field(default=None, validation_alias="LLM_BASE_URL")
+    llm_api_key: str | None = Field(default=None, validation_alias="LLM_API_KEY")
+    llm_timeout_seconds: float = Field(default=60.0, validation_alias="LLM_TIMEOUT_SECONDS")
+    generation_min_evidence_score: float = Field(
+        default=0.25,
+        validation_alias="GENERATION_MIN_EVIDENCE_SCORE",
+    )
+    generation_max_history_messages: int = Field(
+        default=6,
+        ge=5,
+        le=10,
+        validation_alias="GENERATION_MAX_HISTORY_MESSAGES",
+    )
+
     @model_validator(mode="before")
     @classmethod
     def assemble_database_settings(cls, data: Any) -> Any:

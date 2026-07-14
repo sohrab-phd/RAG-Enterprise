@@ -1,7 +1,7 @@
 # RAG Generation
 
 > **Spec ID:** 006  
-> **Status:** Draft  
+> **Status:** Implemented  
 > **Goal:** Generate grounded answers from retrieved chunks, with citations and abstention.  
 > **Scope:** RAG generation only — no agents, tools, function calling, or long-term memory.
 

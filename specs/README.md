@@ -51,7 +51,7 @@ Draft | Review | Approved | Implemented
 | [003-chunking](003-chunking/SPEC.md) | Rule-based chunk generation for embeddings | Draft |
 | [004-embeddings](004-embeddings/SPEC.md) | Dense embeddings with BGE-M3 and pgvector storage | Implemented |
 | [005-retrieval](005-retrieval/SPEC.md) | Dense vector retrieval with metadata filters | Implemented |
-| [006-rag-generation](006-rag-generation/SPEC.md) | Grounded LLM answers with citations and abstention | Draft |
+| [006-rag-generation](006-rag-generation/SPEC.md) | Grounded LLM answers with citations and abstention | Implemented |
 | `authentication.md` | User authentication and session management | TODO |
 | `document-ingestion.md` | Upload, parse, and chunk documents | TODO |
 | `vector-search.md` | Embedding storage and similarity search | TODO |

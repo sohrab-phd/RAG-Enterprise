@@ -14,9 +14,13 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 from rag_enterprise.application.commands.dispatcher import CommandDispatcher
 from rag_enterprise.application.interfaces.embedding import EmbeddingProvider
 from rag_enterprise.application.interfaces.file_storage import FileStorage
+from rag_enterprise.application.interfaces.llm import LLMProvider
 from rag_enterprise.application.queries.dispatcher import QueryDispatcher
 from rag_enterprise.core.config.settings import Settings, get_settings
 from rag_enterprise.db.session.factory import create_engine_and_session_factory
+from rag_enterprise.generation.prompt_builder import PromptBuilder, PromptBuilderConfig
+from rag_enterprise.generation.providers import OpenAICompatibleLLMProvider
+from rag_enterprise.generation.service import GenerationService
 from rag_enterprise.indexing.providers import BgeM3EmbeddingProvider
 from rag_enterprise.indexing.service import IndexingService
 from rag_enterprise.knowledge.infrastructure.storage import InMemoryFileStorage
@@ -33,8 +37,10 @@ class AppContainer:
     session_factory: async_sessionmaker[AsyncSession] | None = None
     file_storage: FileStorage | None = None
     embedding_provider: EmbeddingProvider | None = None
+    llm_provider: LLMProvider | None = None
     indexing_service: IndexingService | None = None
     retrieval_service: RetrievalService | None = None
+    generation_service: GenerationService | None = None
     command_dispatcher: CommandDispatcher = field(default_factory=CommandDispatcher)
     query_dispatcher: QueryDispatcher = field(default_factory=QueryDispatcher)
     _initialized: bool = field(default=False, repr=False)
@@ -53,6 +59,13 @@ class AppContainer:
             model_key=self.settings.embedding_model_key,
             dimensions=self.settings.embedding_dimensions,
         )
+        self.llm_provider = OpenAICompatibleLLMProvider(
+            mode=self.settings.llm_backend,
+            model_key=self.settings.llm_model_key,
+            base_url=self.settings.llm_base_url,
+            api_key=self.settings.llm_api_key,
+            timeout_seconds=self.settings.llm_timeout_seconds,
+        )
         if self.session_factory is not None:
             register_knowledge_handlers(
                 command_dispatcher=self.command_dispatcher,
@@ -70,6 +83,21 @@ class AppContainer:
                 session_factory=self.session_factory,
                 embedding_provider=self.embedding_provider,
             )
+            self.generation_service = GenerationService(
+                session_factory=self.session_factory,
+                retrieval_service=self.retrieval_service,
+                llm_provider=self.llm_provider,
+                prompt_builder=PromptBuilder(
+                    PromptBuilderConfig(
+                        max_history_messages=self.settings.generation_max_history_messages
+                    )
+                ),
+                min_evidence_score=self.settings.generation_min_evidence_score,
+                max_history_messages=self.settings.generation_max_history_messages,
+                default_top_k=self.settings.retrieval_default_top_k,
+                llm_timeout_seconds=self.settings.llm_timeout_seconds,
+                retry_delays_seconds=(0.0, 0.0),
+            )
         self._initialized = True
 
     async def shutdown(self) -> None:
@@ -83,8 +111,10 @@ class AppContainer:
             self.session_factory = None
             self.file_storage = None
             self.embedding_provider = None
+            self.llm_provider = None
             self.indexing_service = None
             self.retrieval_service = None
+            self.generation_service = None
 
         self._initialized = False
 

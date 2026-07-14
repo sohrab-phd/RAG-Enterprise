@@ -40,6 +40,10 @@ OPENAPI_TAGS: list[dict[str, str]] = [
         "name": "retrieval",
         "description": "Dense vector retrieval over indexed knowledge bases.",
     },
+    {
+        "name": "chat",
+        "description": "Grounded RAG chat with citations and abstention.",
+    },
 ]
 
 

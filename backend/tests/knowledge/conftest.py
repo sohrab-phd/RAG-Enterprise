@@ -10,8 +10,9 @@ from rag_enterprise.core.config.settings import get_settings
 from rag_enterprise.core.dependencies.providers import AppContainer, set_container
 from rag_enterprise.db.base import ModelBase
 from rag_enterprise.db.session.factory import create_engine_and_session_factory
-from rag_enterprise.knowledge import models as knowledge_models  # noqa: F401
+from rag_enterprise.generation import persistence as generation_models  # noqa: F401
 from rag_enterprise.indexing import models as indexing_models  # noqa: F401
+from rag_enterprise.knowledge import models as knowledge_models  # noqa: F401
 
 
 @pytest.fixture
