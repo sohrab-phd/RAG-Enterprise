@@ -91,6 +91,12 @@ class Settings(BaseSettings):
         validation_alias="EVALUATION_STORAGE_ROOT",
     )
 
+    # Local upload binary storage (RC1.6)
+    file_storage_root: str = Field(
+        default="storage/uploads",
+        validation_alias="FILE_STORAGE_ROOT",
+    )
+
     # Upload limits (ops-validated at startup; defaults match knowledge constants)
     upload_max_file_size_bytes: int = Field(
         default=50 * 1024 * 1024,

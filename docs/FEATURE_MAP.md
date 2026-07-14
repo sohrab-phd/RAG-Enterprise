@@ -32,6 +32,7 @@ Full catalog: [specs/README.md](../specs/README.md).
 | RC1.3 | End-to-end happy path test | [E2E_HAPPY_PATH.md](backend/E2E_HAPPY_PATH.md) |
 | RC1.4 | Official demo workspace | [Demo Guide](DEMO_GUIDE.md) · [demo/](../demo/README.md) |
 | RC1.5 | Documentation polish | [Documentation index](README.md) |
+| RC1.6 | Local filesystem upload storage | [LOCAL_FILE_STORAGE.md](backend/LOCAL_FILE_STORAGE.md) |
 
 ## Shared foundations
 

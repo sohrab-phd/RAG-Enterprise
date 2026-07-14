@@ -80,3 +80,9 @@ coverage/
 *.key
 credentials.json
 secrets/
+
+# Local runtime storage (uploads, eval artifacts)
+storage/
+eval-artifacts/
+backend/storage/
+backend/eval-artifacts/

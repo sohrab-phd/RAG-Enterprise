@@ -84,6 +84,7 @@ def validate_configuration(
     issues.extend(_validate_llm(settings))
     issues.extend(_validate_embedding(settings))
     issues.extend(_validate_evaluation(settings, create_directory=create_evaluation_directory))
+    issues.extend(_validate_file_storage(settings, create_directory=create_evaluation_directory))
     issues.extend(_validate_upload(settings))
     issues.extend(_validate_logging(settings))
     issues.extend(_validate_environment(settings))
@@ -338,6 +339,63 @@ def _validate_evaluation(
                 field="EVALUATION_STORAGE_ROOT",
             )
         )
+    return issues
+
+
+def _validate_file_storage(
+    settings: Settings,
+    *,
+    create_directory: bool,
+) -> list[ConfigIssue]:
+    issues: list[ConfigIssue] = []
+    root = settings.file_storage_root.strip()
+    if not root:
+        issues.append(
+            ConfigIssue(
+                "Upload",
+                "file storage root must be a non-empty path",
+                field="FILE_STORAGE_ROOT",
+            )
+        )
+        return issues
+
+    path = Path(root)
+    if path.exists() and not path.is_dir():
+        issues.append(
+            ConfigIssue(
+                "Upload",
+                f"path exists but is not a directory: {path}",
+                field="FILE_STORAGE_ROOT",
+            )
+        )
+        return issues
+
+    if create_directory:
+        try:
+            path.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            issues.append(
+                ConfigIssue(
+                    "Upload",
+                    f"unable to create storage directory {path}: {exc}",
+                    field="FILE_STORAGE_ROOT",
+                )
+            )
+            return issues
+
+    if path.exists() and path.is_dir():
+        probe = path / ".config_probe"
+        try:
+            probe.write_text("ok", encoding="utf-8")
+            probe.unlink(missing_ok=True)
+        except OSError as exc:
+            issues.append(
+                ConfigIssue(
+                    "Upload",
+                    f"storage directory is not writable: {exc}",
+                    field="FILE_STORAGE_ROOT",
+                )
+            )
     return issues
 
 

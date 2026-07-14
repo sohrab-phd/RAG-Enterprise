@@ -35,6 +35,8 @@ Service inventory: [infrastructure/README.md](../infrastructure/README.md).
 Startup validation (fail fast): [CONFIGURATION.md](backend/CONFIGURATION.md).
 
 Application settings are documented alongside Compose variables in `.env.example`.
+Upload binaries persist under `FILE_STORAGE_ROOT` (default `storage/uploads`);
+see [Local File Storage](backend/LOCAL_FILE_STORAGE.md).
 
 ## Production (deferred)
 

@@ -180,7 +180,11 @@ async def _check_upload_storage(storage: FileStorage | None) -> CheckResult:
         )
     except (OSError, KeyError, RuntimeError, TypeError, ValueError) as exc:
         return CheckResult(name="upload_storage", ok=False, detail=f"probe failed: {exc}")
-    return CheckResult(name="upload_storage", ok=True, detail="put/get/delete ok")
+    return CheckResult(
+        name="upload_storage",
+        ok=True,
+        detail="filesystem put/get/delete ok",
+    )
 
 
 async def _probe_upload_storage(

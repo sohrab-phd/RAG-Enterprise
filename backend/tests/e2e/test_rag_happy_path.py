@@ -36,7 +36,9 @@ async def e2e_client(
 ) -> AsyncIterator[AsyncClient]:
     """Boot the full application lifespan with deterministic local providers."""
     eval_root = tmp_path / "eval-artifacts"
+    upload_root = tmp_path / "storage" / "uploads"
     monkeypatch.setenv("EVALUATION_STORAGE_ROOT", str(eval_root))
+    monkeypatch.setenv("FILE_STORAGE_ROOT", str(upload_root))
     monkeypatch.setenv("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
     monkeypatch.setenv("LLM_BACKEND", "echo")
     monkeypatch.setenv("EMBEDDING_BACKEND", "deterministic")
@@ -89,6 +91,9 @@ async def test_rag_happy_path_persian_leave_policy(e2e_client: AsyncClient) -> N
     container = get_container()
     assert container.session_factory is not None
     assert container.file_storage is not None
+    from rag_enterprise.knowledge.infrastructure.filesystem import FileSystemStorage
+
+    assert isinstance(container.file_storage, FileSystemStorage)
     assert container.indexing_service is not None
     assert container.evaluation_service is not None
 

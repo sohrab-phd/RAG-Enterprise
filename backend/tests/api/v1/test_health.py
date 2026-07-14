@@ -30,7 +30,9 @@ async def ready_client(
 ) -> AsyncIterator[AsyncClient]:
     """HTTP client with lifespan using sqlite + local evaluation storage."""
     eval_root = tmp_path / "eval-artifacts"
+    upload_root = tmp_path / "storage" / "uploads"
     monkeypatch.setenv("EVALUATION_STORAGE_ROOT", str(eval_root))
+    monkeypatch.setenv("FILE_STORAGE_ROOT", str(upload_root))
     monkeypatch.setenv("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
     monkeypatch.setenv("LLM_BACKEND", "echo")
     monkeypatch.setenv("EMBEDDING_BACKEND", "deterministic")
@@ -97,6 +99,8 @@ async def test_ready_ok_with_lifespan(ready_client: AsyncClient) -> None:
         "evaluation_storage",
         "upload_storage",
     }
+    upload = next(item for item in payload["checks"] if item["name"] == "upload_storage")
+    assert "filesystem" in upload["detail"]
 
 
 @pytest.mark.asyncio

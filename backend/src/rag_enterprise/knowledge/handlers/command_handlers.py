@@ -377,7 +377,11 @@ class InitiateUploadHandler:
                 created_by_user_id=command.actor.user_id,
             )
             await uow.upload_sessions.add(session)
-            session.storage_key_staging = staging_storage_key(session.id)
+            session.storage_key_staging = staging_storage_key(
+                session.id,
+                organization_id=scope.organization_id,
+                workspace_id=scope.workspace_id,
+            )
             await uow.session.flush()
             await uow.commit()
             return Result.ok(to_upload_session(session))
@@ -418,7 +422,11 @@ class CompleteUploadHandler:
             digest = hashlib.sha256(command.content).hexdigest()
             if command.checksum_sha256 and command.checksum_sha256 != digest:
                 return Result.fail(conflict("Checksum mismatch").error)  # type: ignore[arg-type]
-            key = session.storage_key_staging or staging_storage_key(session.id)
+            key = session.storage_key_staging or staging_storage_key(
+                session.id,
+                organization_id=scope.organization_id,
+                workspace_id=scope.workspace_id,
+            )
             await self._file_storage.put(
                 organization_id=scope.organization_id,
                 workspace_id=scope.workspace_id,

@@ -1,9 +1,10 @@
-"""In-memory file storage for development and tests."""
+"""In-memory file storage for unit tests, plus opaque storage key helpers."""
 
 from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
+from pathlib import Path
 
 
 @dataclass(slots=True)
@@ -14,7 +15,7 @@ class _StoredObject:
 
 
 class InMemoryFileStorage:
-    """Simple dict-backed file storage."""
+    """Dict-backed file storage for isolated unit/component tests."""
 
     def __init__(self) -> None:
         self._objects: dict[str, _StoredObject] = {}
@@ -49,12 +50,22 @@ def storage_key_for_version(
     version_id: uuid.UUID,
     file_name: str,
 ) -> str:
-    return (
-        f"org/{organization_id}/workspace/{workspace_id}/"
-        f"knowledge-base/{knowledge_base_id}/document/{document_id}/"
-        f"version/{version_id}/original/{file_name}"
-    )
+    """Return a relative object key under ``FILE_STORAGE_ROOT``.
+
+    Layout::
+
+        {organization_id}/{workspace_id}/{document_id}/{document_version_id}/{file_name}
+    """
+    del knowledge_base_id
+    safe_name = Path(file_name).name or "upload.bin"
+    return f"{organization_id}/{workspace_id}/{document_id}/{version_id}/{safe_name}"
 
 
-def staging_storage_key(upload_id: uuid.UUID) -> str:
-    return f"uploads/staging/{upload_id}"
+def staging_storage_key(
+    upload_id: uuid.UUID,
+    *,
+    organization_id: uuid.UUID,
+    workspace_id: uuid.UUID,
+) -> str:
+    """Return a staging key under org/workspace before version binding."""
+    return f"{organization_id}/{workspace_id}/staging/{upload_id}"

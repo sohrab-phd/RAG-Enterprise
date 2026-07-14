@@ -23,8 +23,11 @@ knowledge/
   unit_of_work.py        KnowledgeUnitOfWork
   registration.py        Dispatcher registration
   api/routes.py          FastAPI endpoints
-  infrastructure/        In-memory file storage (dev/test)
+  infrastructure/        FileSystemStorage (runtime) + InMemoryFileStorage (tests)
 ```
+
+Binary uploads use local disk via [Local File Storage (RC1.6)](LOCAL_FILE_STORAGE.md)
+(`FILE_STORAGE_ROOT`, default `storage/uploads`). Tests keep `InMemoryFileStorage`.
 
 ## API surface
 

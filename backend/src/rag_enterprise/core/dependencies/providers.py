@@ -24,7 +24,7 @@ from rag_enterprise.generation.providers import OpenAICompatibleLLMProvider
 from rag_enterprise.generation.service import GenerationService
 from rag_enterprise.indexing.providers import BgeM3EmbeddingProvider
 from rag_enterprise.indexing.service import IndexingService
-from rag_enterprise.knowledge.infrastructure.storage import InMemoryFileStorage
+from rag_enterprise.knowledge.infrastructure.filesystem import FileSystemStorage
 from rag_enterprise.knowledge.registration import register_knowledge_handlers
 from rag_enterprise.retrieval.service import RetrievalService
 
@@ -59,7 +59,7 @@ class AppContainer:
         self.engine, self.session_factory = create_engine_and_session_factory(
             self.settings.database
         )
-        self.file_storage = InMemoryFileStorage()
+        self.file_storage = FileSystemStorage(self.settings.file_storage_root)
         self.embedding_provider = BgeM3EmbeddingProvider(
             mode=self.settings.embedding_backend,
             model_key=self.settings.embedding_model_key,

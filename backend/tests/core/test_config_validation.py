@@ -76,6 +76,9 @@ def _settings(tmp_path: Path | None = None, **overrides: object) -> Settings:
         "generation_min_evidence_score": 0.25,
         "generation_max_history_messages": 6,
         "evaluation_storage_root": eval_root,
+        "file_storage_root": str(tmp_path / "uploads")
+        if tmp_path is not None
+        else "storage/uploads",
         "upload_max_file_size_bytes": 1024,
         "upload_max_bulk_files": 10,
         "upload_session_ttl_hours": 24,
@@ -88,6 +91,14 @@ def test_valid_default_configuration(tmp_path: Path) -> None:
     settings = _settings(tmp_path)
     validate_configuration(settings)
     assert Path(settings.evaluation_storage_root).is_dir()
+    assert Path(settings.file_storage_root).is_dir()
+
+
+def test_file_storage_root_created(tmp_path: Path) -> None:
+    root = tmp_path / "nested" / "uploads"
+    settings = _settings(tmp_path, file_storage_root=str(root))
+    validate_configuration(settings)
+    assert root.is_dir()
 
 
 def test_echo_llm_does_not_require_api_key(tmp_path: Path) -> None:

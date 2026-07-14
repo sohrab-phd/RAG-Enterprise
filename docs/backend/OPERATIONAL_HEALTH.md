@@ -35,7 +35,7 @@ Checks (bounded to ~2s each):
 | `dependency_injection` | `AppContainer.is_initialized` |
 | `database` | `SELECT 1` via SQLAlchemy engine |
 | `evaluation_storage` | `EVALUATION_STORAGE_ROOT` is a writable directory |
-| `upload_storage` | file storage `put` → `get` → `delete` probe |
+| `upload_storage` | local filesystem `put` → `get` → `delete` probe ([LOCAL_FILE_STORAGE.md](LOCAL_FILE_STORAGE.md)) |
 
 Does **not** call LLM or embedding providers.
 
@@ -70,6 +70,7 @@ uv run pytest tests/api/v1/test_health.py -q
 ## Related documents
 
 - [Configuration Validation (RC1.1)](CONFIGURATION.md)
+- [Local File Storage (RC1.6)](LOCAL_FILE_STORAGE.md)
 - [End-to-End Happy Path (RC1.3)](E2E_HAPPY_PATH.md)
 - [API Foundation](API_FOUNDATION.md)
 - [Architecture](../ARCHITECTURE.md)

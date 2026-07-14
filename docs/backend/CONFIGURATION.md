@@ -37,7 +37,7 @@ backend/src/rag_enterprise/core/config/
 | **LLM** | `LLM_BACKEND` ∈ `{echo, http}`; non-empty model key; positive timeout; evidence score in `[0, 1]`. **`echo` does not require an API key.** **`http` requires `LLM_API_KEY` and `LLM_BASE_URL`.** |
 | **Embedding** | `EMBEDDING_BACKEND` ∈ `{deterministic, flag}`; non-empty model key; dimensions, batch size, and default top_k positive |
 | **Evaluation** | `EVALUATION_STORAGE_ROOT` non-empty; create directory if missing; path must be a directory |
-| **Upload** | `UPLOAD_MAX_FILE_SIZE_BYTES`, `UPLOAD_MAX_BULK_FILES`, `UPLOAD_SESSION_TTL_HOURS` must be positive |
+| **Upload** | `FILE_STORAGE_ROOT` non-empty; create/writable directory; `UPLOAD_MAX_FILE_SIZE_BYTES`, `UPLOAD_MAX_BULK_FILES`, `UPLOAD_SESSION_TTL_HOURS` must be positive |
 | **Logging** | `LOG_LEVEL` ∈ `{CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET}` |
 | **Environment** | `APP_ENV` ∈ `{development, staging, production, test}`; backend port in range; API prefix starts with `/` |
 
@@ -69,9 +69,12 @@ settings fields exist so operators can fail fast on bad deploy config.
 
 | Env | Default |
 | --- | --- |
+| `FILE_STORAGE_ROOT` | `storage/uploads` |
 | `UPLOAD_MAX_FILE_SIZE_BYTES` | `52428800` (50 MiB) |
 | `UPLOAD_MAX_BULK_FILES` | `100` |
 | `UPLOAD_SESSION_TTL_HOURS` | `24` |
+
+Local binary layout: [Local File Storage (RC1.6)](LOCAL_FILE_STORAGE.md).
 
 ## Testing
 
@@ -83,6 +86,7 @@ uv run pytest tests/core/test_config_validation.py -q
 ## Related documents
 
 - [Operational Health (RC1.2)](OPERATIONAL_HEALTH.md) — readiness uses the config-validated flag
+- [Local File Storage (RC1.6)](LOCAL_FILE_STORAGE.md) — `FILE_STORAGE_ROOT`
 - [Persistence Layer](PERSISTENCE_LAYER.md) — database settings
 - [RAG Generation](RAG_GENERATION.md) — LLM settings
 - [Embeddings & Retrieval](EMBEDDINGS_AND_RETRIEVAL.md) — embedding backends
