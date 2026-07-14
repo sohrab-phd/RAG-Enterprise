@@ -1,20 +1,26 @@
 # Contributing
 
-> **Status:** Draft skeleton — TODO: expand as team processes mature.
+> **Purpose:** How to contribute to RAG-enterprise Version 1.
 
-## Getting Started
+## Purpose
 
-1. Clone the repository
-2. Copy `.env.example` to `.env`
-3. Start infrastructure: `docker compose up -d`
-4. Set up backend: see [backend/README.md](../backend/README.md)
-5. Set up frontend: see [frontend/README.md](../frontend/README.md)
+Get a working local environment and land changes that match package boundaries,
+specs, and quality gates.
 
-## Development Workflow
+## Getting started
 
-<!-- TODO: Branch naming, PR process, review requirements -->
+1. Clone the repository.
+2. Follow [Quick Start](../README.md#quick-start) or the full
+   [Development Guide](DEVELOPMENT.md).
+3. Read [Project Overview](OVERVIEW.md) and [Architecture Summary](ARCHITECTURE_SUMMARY.md).
+4. Package entry points: [backend/README.md](../backend/README.md),
+   [frontend/README.md](../frontend/README.md).
 
-## Code Quality
+## Development workflow
+
+See [Development Workflow](DEVELOPMENT_WORKFLOW.md) for branch → PR steps.
+
+## Code quality
 
 ### Backend
 
@@ -36,18 +42,21 @@ npm run test
 npm run build
 ```
 
-## Commit Guidelines
-
-<!-- TODO: Conventional commits or team standard -->
-
-## Pull Request Checklist
+## Pull request checklist
 
 - [ ] Tests pass locally
-- [ ] Lint/format checks pass
-- [ ] Documentation updated (if applicable)
+- [ ] Lint / format / type checks pass
+- [ ] Documentation or OpenAPI updated when behavior changes
 - [ ] No secrets committed
-- [ ] TODO: Add security review criteria for sensitive changes
+- [ ] Spec / ADR consulted for behavioral or architectural changes
 
-## AI-Assisted Development
+## AI-assisted development
 
-See [agents/](../agents/) for specialized agent roles and [.cursor/rules/](../.cursor/rules/) for IDE guidance.
+See [agents/](../agents/) and [.cursor/rules/](../.cursor/rules/).
+
+## Related documents
+
+- [Documentation index](README.md)
+- [Feature Map](FEATURE_MAP.md)
+- [ADR index](DECISIONS.md)
+- [Root README](../README.md)

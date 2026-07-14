@@ -1,24 +1,43 @@
 # RAG-enterprise
 
-Production-grade Retrieval-Augmented Generation (RAG) platform monorepo.
+Production-grade **Retrieval-Augmented Generation** platform (monorepo).
 
-This repository establishes the foundational skeleton for long-lived enterprise development. Business features (authentication, RAG pipelines, chat, agents) are intentionally deferred to future work.
+Version 1 delivers knowledge management, dense retrieval, grounded chat with
+citations, offline evaluation, an operator console, and a public Persian demo
+corpus. Durable decisions live in ADRs; detailed behavior lives in `specs/`.
+
+## Documentation (two clicks max)
+
+Start at the **[Documentation index](docs/README.md)** — every major guide is
+linked from there. Direct shortcuts:
+
+| Guide | Link |
+| --- | --- |
+| Project Overview | [docs/OVERVIEW.md](docs/OVERVIEW.md) |
+| Architecture Summary | [docs/ARCHITECTURE_SUMMARY.md](docs/ARCHITECTURE_SUMMARY.md) |
+| Feature Map | [docs/FEATURE_MAP.md](docs/FEATURE_MAP.md) |
+| Development Guide | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) |
+| Development Workflow | [docs/DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md) |
+| Deployment Guide | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) |
+| Evaluation Guide | [docs/EVALUATION_GUIDE.md](docs/EVALUATION_GUIDE.md) |
+| Demo Guide | [docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md) |
+| ADR index | [docs/DECISIONS.md](docs/DECISIONS.md) |
 
 ## Repository structure
 
-```
+```text
 RAG-enterprise/
 ├── backend/          # FastAPI application (Python, uv)
-├── frontend/         # React + Vite + TypeScript
+├── frontend/         # React + Vite + TypeScript operator console
 ├── demo/             # Official V1 Persian demo corpus (RC1.4)
-├── infrastructure/   # IaC and deployment assets (future)
-├── docs/             # Architecture and product documentation
-├── specs/            # Feature specifications
-├── scripts/          # Developer and CI helper scripts
-├── tests/            # Cross-cutting integration tests (future)
+├── infrastructure/   # IaC placeholder; local Compose at repo root
+├── docs/             # Guides, architecture, domain/data docs
+├── specs/            # Feature specifications (authoritative)
+├── scripts/          # Developer and CI helpers
+├── tests/            # Cross-cutting integration tests (placeholder)
 ├── agents/           # AI-assisted development agent definitions
 ├── .cursor/rules/    # Cursor IDE project rules
-└── .github/workflows/# CI/CD pipelines
+└── .github/workflows/# CI pipelines
 ```
 
 ## Prerequisites
@@ -27,7 +46,11 @@ RAG-enterprise/
 - Node.js 20+ and npm
 - Docker and Docker Compose
 
+Expanded checklist: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#prerequisites).
+
 ## Quick start
+
+Full walkthrough: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). Minimal path:
 
 ### 1. Infrastructure
 
@@ -44,33 +67,43 @@ uv sync
 uv run uvicorn rag_enterprise.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Health check: [http://localhost:8000/api/v1/health](http://localhost:8000/api/v1/health)
+- Liveness: <http://localhost:8000/api/v1/live>
+- Readiness: <http://localhost:8000/api/v1/ready>
+- OpenAPI: <http://localhost:8000/docs>
 
 ### 3. Frontend
 
 ```bash
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
 
-## Development
+Open the URL printed by Vite (normally <http://localhost:5173>).
 
-| Area        | Lint              | Test           | Format          |
-|-------------|-------------------|----------------|-----------------|
-| Backend     | `uv run ruff check` | `uv run pytest` | `uv run ruff format` |
-| Frontend    | `npm run lint`    | `npm run test` | `npm run format` |
+### 4. Try the demo
 
-See [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) for contribution guidelines.
+Import `demo/knowledge/`, index, and chat — see [Demo Guide](docs/DEMO_GUIDE.md).
 
-## Documentation
+## Development quality
 
-- [Product Requirements](docs/PRD.md)
-- [Architecture](docs/ARCHITECTURE.md)
-- [Tech Stack](docs/TECH_STACK.md)
-- [Roadmap](docs/ROADMAP.md)
-- [Architecture Decisions](docs/DECISIONS.md)
-- [Official Demo Workspace (V1)](demo/README.md)
+| Area | Lint | Test | Format |
+| --- | --- | --- | --- |
+| Backend | `uv run ruff check` | `uv run pytest` | `uv run ruff format` |
+| Frontend | `npm run lint` | `npm run test` | `npm run format` |
+
+- Workflow: [docs/DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md)
+- Contributing: [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)
+
+## Package entry points
+
+| Package | README |
+| --- | --- |
+| Backend | [backend/README.md](backend/README.md) |
+| Frontend | [frontend/README.md](frontend/README.md) |
+| Specs | [specs/README.md](specs/README.md) |
+| Demo | [demo/README.md](demo/README.md) |
+| Infrastructure | [infrastructure/README.md](infrastructure/README.md) |
 
 ## License
 

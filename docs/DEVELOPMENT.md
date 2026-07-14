@@ -4,6 +4,11 @@ This guide defines the supported local setup and daily workflow for RAG-enterpri
 Run package commands from the package directory shown; the repository intentionally
 has no root Python virtual environment or root Node workspace.
 
+**Also see:** [Documentation index](README.md) ·
+[Development Workflow](DEVELOPMENT_WORKFLOW.md) ·
+[Deployment Guide](DEPLOYMENT.md) ·
+[Quick Start](../README.md#quick-start)
+
 ## Prerequisites
 
 - Git
@@ -154,3 +159,12 @@ checks. CI remains authoritative and may add platform or security checks.
   service or use documented local overrides without committing secrets.
 - If Compose services are unhealthy, inspect `docker compose ps` and service logs
   before resetting volumes.
+
+## Related documents
+
+- [Documentation index](README.md)
+- [Development Workflow](DEVELOPMENT_WORKFLOW.md)
+- [Contributing](CONTRIBUTING.md)
+- [Deployment Guide](DEPLOYMENT.md)
+- [Demo Guide](DEMO_GUIDE.md)
+- [Root README](../README.md)

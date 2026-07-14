@@ -1,6 +1,7 @@
 # Roadmap
 
-> **Status:** Draft skeleton — TODO: align milestones with product and engineering capacity.
+> **Status:** Directional sequencing — not a commitment tracker.  
+> **Living capability map:** [Feature Map](FEATURE_MAP.md)
 
 ## Phase 0 — Foundation (Current)
 
@@ -31,3 +32,9 @@
 ## Phase 5 — Enterprise Readiness
 
 <!-- TODO: Audit logs, RBAC, SLA monitoring, production deployment -->
+
+## Related documents
+
+- [Feature Map](FEATURE_MAP.md)
+- [Project Overview](OVERVIEW.md)
+- [Documentation index](README.md)

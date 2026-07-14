@@ -1,4 +1,4 @@
-"""Offline evaluation framework (Feature 007).
+# Offline evaluation framework (Feature 007)
 
 > **Status:** Implemented  
 > **Spec:** [007 Evaluation Framework](../../specs/007-evaluation-framework/README.md)

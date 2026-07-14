@@ -1,0 +1,24 @@
+{
+  "config": {
+    "MD013": false,
+    "MD033": false,
+    "MD041": false,
+    "MD060": false
+  },
+  "globs": [
+    "README.md",
+    "docs/**/*.md",
+    "backend/README.md",
+    "frontend/README.md",
+    "specs/README.md",
+    "demo/**/*.md",
+    "infrastructure/README.md",
+    "tests/README.md"
+  ],
+  "ignores": [
+    "**/node_modules/**",
+    "backend/.venv/**",
+    "specs/*/SPEC.md",
+    "specs/*/**"
+  ]
+}

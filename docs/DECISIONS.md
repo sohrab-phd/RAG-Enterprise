@@ -4,6 +4,9 @@ Architecture Decision Records (ADRs) capture durable, cross-cutting, or
 difficult-to-reverse technical decisions for RAG-enterprise. Detailed records live
 in [`docs/adr/`](adr/).
 
+**Navigation:** [Architecture Summary](ARCHITECTURE_SUMMARY.md) ·
+[Documentation index](README.md)
+
 ## Decision index
 
 | ADR | Decision | Status |

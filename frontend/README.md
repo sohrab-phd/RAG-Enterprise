@@ -1,49 +1,44 @@
 # RAG-enterprise Frontend
 
-Enterprise operator console (Feature 008). Knowledge (Sprint 1), Chat (Sprint 2), and Evaluation dashboard (Sprint 3).
+Enterprise operator console (Feature 008). Knowledge, Chat, and Evaluation dashboard
+are implemented; Experiments / Settings remain placeholders.
+
+## Purpose
+
+UI for operators to manage knowledge bases, run grounded chat, and inspect
+evaluation runs against the FastAPI backend.
 
 ## Stack
 
 - React 19 + Vite + TypeScript
 - Tailwind CSS v4 + shadcn/ui
-- React Router
-- TanStack Query
-- React Hook Form + Zod
+- React Router · TanStack Query · React Hook Form + Zod
 
 ## Implemented
 
 - App shell (header, sidebar, layout, theme, routing)
-- Knowledge module against real `/api/v1` endpoints:
-  - Knowledge base list / create
-  - Browser: folder tree, document list, inspector
-  - Upload dialog with drag-and-drop + progress
-  - Metadata edit drawer
-  - Processing status from create-version response
-- Chat module against `POST /api/v1/workspaces/{workspace_id}/chat`:
-  - Conversation list (client `sessionStorage` until a list API exists)
-  - Thread, prompt composer (KB + top_k), citations
-  - Evidence panel and Pipeline Inspector (optional `POST .../retrieve`)
-  - Loading / empty / error / abstention states
-  - Streaming-ready turn state (`pending` → `complete`); SSE not implemented
-- Evaluation dashboard against Feature 007 read adapters:
-  - Overview metrics, failing gates, recent runs, run detail/summary
-  - Trend charts: Groundedness, Recall@K, Citation accuracy, Retrieval latency
-  - KB / dataset filters; empty / loading / error states
-- Experiments / Settings remain placeholders
+- Knowledge module against real `/api/v1` endpoints
+- Chat module (`POST .../chat`) with citations and evidence/pipeline panels
+- Evaluation dashboard (Feature 007 read adapters + trend charts)
+
+## Prerequisites
+
+- Node.js 20+ and npm
+- Backend running locally (see [backend/README.md](../backend/README.md))
 
 ## Setup
 
 ```bash
-npm install
+npm ci
 ```
 
-## Development
+## Run
 
 ```bash
 npm run dev
 ```
 
-Env (defaults match backend knowledge test fixtures):
+Env defaults (match backend knowledge fixtures unless overridden):
 
 ```bash
 VITE_API_BASE_URL=http://localhost:8000
@@ -64,6 +59,11 @@ npm run test
 npm run build
 ```
 
-## Spec
+## Related documents
 
-See [`specs/008-frontend/`](../specs/008-frontend/README.md).
+- [Documentation index](../docs/README.md)
+- [Feature Map](../docs/FEATURE_MAP.md)
+- [Demo Guide](../docs/DEMO_GUIDE.md)
+- [Spec 008](../specs/008-frontend/README.md)
+- [Development Guide](../docs/DEVELOPMENT.md)
+- [Root README](../README.md)

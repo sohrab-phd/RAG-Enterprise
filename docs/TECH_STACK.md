@@ -11,7 +11,7 @@
 | FastAPI | HTTP API framework | Adopted |
 | Pydantic / pydantic-settings | Validation & config | Adopted |
 | structlog | Structured logging | Adopted |
-| SQLAlchemy 2 | ORM (async) | Planned |
+| SQLAlchemy 2 | ORM (async) | Adopted |
 | LangGraph | Agent orchestration | Planned |
 | pytest / ruff / mypy | Testing & quality | Adopted |
 
@@ -44,3 +44,9 @@
 | Technology | Purpose | Status |
 |------------|---------|--------|
 | GitHub Actions | CI pipelines | Adopted |
+
+## Related documents
+
+- [Architecture Summary](ARCHITECTURE_SUMMARY.md)
+- [Deployment Guide](DEPLOYMENT.md)
+- [Documentation index](README.md)

@@ -1,6 +1,7 @@
 # Product Requirements Document (PRD)
 
-> **Status:** Draft skeleton — TODO: populate with product requirements.
+> **Status:** Draft skeleton — TODO: populate with product requirements.  
+> **For Version 1 scope today:** [Project Overview](OVERVIEW.md) · [Feature Map](FEATURE_MAP.md)
 
 ## 1. Overview
 

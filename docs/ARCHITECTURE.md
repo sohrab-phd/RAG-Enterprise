@@ -1,18 +1,27 @@
 # Architecture
 
-> **Status:** Draft skeleton — TODO: document system architecture as features are implemented.
+> **Status:** Evolving runtime notes for Version 1.  
+> **Prefer:** [Architecture Summary](ARCHITECTURE_SUMMARY.md) for the V1 map and ADR index.
+
+This page records implementation-facing architecture notes as they land. Durable
+decisions remain in [DECISIONS.md](DECISIONS.md) / `docs/adr/`. Feature behavior
+remains in `specs/`.
 
 ## 1. Architectural Principles
 
-<!-- TODO: Modularity, async-first, observability, security-by-default -->
+See [ADR 001](adr/001-monorepo-architecture.md) and
+[ADR 005](adr/005-ai-platform-principles.md). Governance:
+[`.cursor/rules/architecture.md`](../.cursor/rules/architecture.md).
 
 ## 2. High-Level System Context
 
-<!-- TODO: C4 context diagram and narrative -->
+Operator console → FastAPI `/api/v1` → PostgreSQL/pgvector (+ Redis local).
+Narrative map: [Architecture Summary](ARCHITECTURE_SUMMARY.md).
 
 ## 3. Monorepo Layout
 
-<!-- TODO: Describe backend, frontend, infrastructure boundaries -->
+Package boundaries: [Project Overview](OVERVIEW.md) and
+[ADR 001](adr/001-monorepo-architecture.md).
 
 ## 4. Backend Architecture
 
@@ -32,15 +41,19 @@ See [CONFIGURATION.md](backend/CONFIGURATION.md),
 
 ## 5. Frontend Architecture
 
-<!-- TODO: React app structure, state management, API client -->
+Operator console notes: [frontend/README.md](../frontend/README.md) ·
+[Feature 008](../specs/008-frontend/README.md).
 
 ## 6. Data Architecture
 
-<!-- TODO: PostgreSQL, pgvector, Redis roles -->
+Entry points: [data/DATA_ARCHITECTURE.md](data/DATA_ARCHITECTURE.md) ·
+[ADR 003](adr/003-database-selection.md).
 
-## 7. AI / RAG Pipeline (Future)
+## 7. AI / RAG Pipeline
 
-<!-- TODO: LangGraph orchestration, embedding strategy, retrieval -->
+Version 1 pipeline map: [Feature Map](FEATURE_MAP.md) ·
+[Architecture Summary](ARCHITECTURE_SUMMARY.md#rag-pipeline-version-1).
+LangGraph orchestration remains future work ([ADR 005](adr/005-ai-platform-principles.md)).
 
 ## 8. Observability
 
@@ -65,6 +78,16 @@ pipeline: [End-to-End Happy Path](backend/E2E_HAPPY_PATH.md).
 
 <!-- TODO: AuthN/AuthZ, secrets, network boundaries -->
 
+Tenancy background: [domain/MULTI_TENANCY.md](domain/MULTI_TENANCY.md) ·
+[domain/PERMISSION_MODEL.md](domain/PERMISSION_MODEL.md).
+
 ## 10. Deployment Topology (Future)
 
-<!-- TODO: Environments, CI/CD, infrastructure as code -->
+Local path today: [Deployment Guide](DEPLOYMENT.md). Production IaC deferred —
+[infrastructure/README.md](../infrastructure/README.md).
+
+## Related documents
+
+- [Architecture Summary](ARCHITECTURE_SUMMARY.md)
+- [Documentation index](README.md)
+- [ADR index](DECISIONS.md)

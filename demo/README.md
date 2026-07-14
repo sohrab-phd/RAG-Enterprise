@@ -31,14 +31,17 @@ demo/
 | Policy owner | واحد منابع انسانی |
 
 Documents **cross-reference** each other by title. Keep numbers unchanged when you
-edit content so evaluation remain aligned.
+edit content so evaluation remains aligned.
 
 ## 1. Import demo documents
 
-1. Start the backend and open the frontend Knowledge UI (see [docs/DEVELOPMENT.md](../docs/DEVELOPMENT.md)).
-2. Create a knowledge base, for example `نوین‌پرداز — سیاست‌های کارکنان`, with default language `fa`.
+1. Start the backend and open the frontend Knowledge UI
+   (see [docs/DEVELOPMENT.md](../docs/DEVELOPMENT.md)).
+2. Create a knowledge base, for example `نوین‌پرداز — سیاست‌های کارکنان`,
+   with default language `fa`.
 3. Activate the knowledge base (retrieval requires status `active`).
-4. Upload **all four** files from `demo/knowledge/`:
+4. Upload **all four** files from `demo/knowledge/` (see table below).
+5. Use declared language `fa` and treat each file as one document.
 
 | File | Title |
 | --- | --- |
@@ -46,8 +49,6 @@ edit content so evaluation remain aligned.
 | `02-leave-policy-fa.txt` | سیاست مرخصی |
 | `03-remote-work-policy-fa.txt` | سیاست دورکاری |
 | `04-travel-expense-policy-fa.txt` | سیاست هزینه سفر |
-
-5. Use declared language `fa` and treat each file as one document.
 
 ## 2. Run indexing
 
@@ -124,6 +125,9 @@ Rows tagged `abstain` keep empty citations and `expect_abstention: true`.
 
 ## Related
 
+- [Demo Guide](../docs/DEMO_GUIDE.md) — short operator entry
+- [Evaluation Guide](../docs/EVALUATION_GUIDE.md)
 - [Feature 007 — Golden Dataset](../specs/007-evaluation-framework/DATASET.md)
 - [Evaluation Framework docs](../docs/backend/EVALUATION_FRAMEWORK.md)
 - [E2E Happy Path (RC1.3)](../docs/backend/E2E_HAPPY_PATH.md)
+- [Documentation index](../docs/README.md)
