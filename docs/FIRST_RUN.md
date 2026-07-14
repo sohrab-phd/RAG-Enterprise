@@ -1,21 +1,26 @@
 # First Run (Version 1.0.0)
 
 Canonical bring-up guide for RAG-enterprise **Version 1.0.0** from a fresh clone.
-Follow the sections **in order**. Commands assume you start each package section from
-the directory named in that step.
+Follow the sections **in order**.
+
+**Directory rule:** Never assume which folder your shell is in. Every major section
+starts with an explicit `cd`. Replace `/path/to/RAG-Enterprise` with the absolute
+path to your clone (the folder that contains `backend/`, `frontend/`, and
+`docker-compose.yml`).
 
 This path uses:
 
 - Local Docker Compose for PostgreSQL (pgvector) and Redis
 - Backend defaults suitable for a first demo: `LLM_BACKEND=echo`,
   `EMBEDDING_BACKEND=deterministic` (no external model API keys required)
-- The operator console for Knowledge, Chat, and Evaluation
+- The operator console for Knowledge, Chat, and Evaluation (sidebar links)
 
 ---
 
 ## Prerequisites
 
-Install and verify the following on your machine.
+Install and verify the following on your machine. No repository directory is
+required yet.
 
 | Software | Recommended version | Notes |
 | --- | --- | --- |
@@ -26,7 +31,7 @@ Install and verify the following on your machine.
 | Node.js | **20+** | Frontend runtime |
 | npm | Bundled with Node | Frontend installs |
 
-Verify:
+Verify (from any directory):
 
 ```bash
 git --version
@@ -38,6 +43,8 @@ node --version
 npm --version
 ```
 
+On Windows, if `python` is missing, try `py -3 --version`.
+
 Expected: each command prints a version; Python reports 3.12 or newer; Node reports
 20 or newer; `docker compose version` succeeds (Compose v2).
 
@@ -45,17 +52,23 @@ Expected: each command prints a version; Python reports 3.12 or newer; Node repo
 
 ## Clone repository
 
+From any directory where you want the project to live:
+
 ```bash
 git clone https://github.com/sohrab-phd/RAG-Enterprise.git
 cd RAG-Enterprise
 ```
 
-Open the cloned directory in your editor or terminal. All later paths are relative to
-this repository root unless a step says otherwise (`backend/`, `frontend/`).
+Remember this folder’s absolute path. You will use it as `/path/to/RAG-Enterprise`
+in every later section.
 
 ---
 
 ## Environment
+
+```bash
+cd /path/to/RAG-Enterprise
+```
 
 Copy the example environment file at the **repository root** (used by Docker Compose):
 
@@ -65,7 +78,7 @@ cp .env.example .env
 ```
 
 ```powershell
-# Windows PowerShell
+# Windows PowerShell (still inside /path/to/RAG-Enterprise)
 Copy-Item .env.example .env
 ```
 
@@ -102,7 +115,7 @@ Only the values that matter for a standard local first run are listed. Defaults 
 | `DATABASE_URL` | Async SQLAlchemy URL the backend uses (`postgresql+asyncpg://…`). Must match Postgres credentials. |
 | `REDIS_HOST` / `REDIS_PORT` / `REDIS_URL` | Local Redis from Compose (present for local stack completeness). |
 | `FILE_STORAGE_ROOT` | Local folder for uploaded binaries (default `storage/uploads`; created at startup). |
-| `VITE_API_BASE_URL` | Frontend → backend base URL (default `http://localhost:8000`). |
+| `VITE_API_BASE_URL` | Documented API base for the Vite proxy (default `http://localhost:8000`). The frontend works without a separate `frontend/.env` on first run; Vite defaults to this host if unset. |
 
 ### Recommended local additions (optional)
 
@@ -119,6 +132,9 @@ Without lowering the evidence score, Chat may abstain more often under determini
 embeddings. `echo` and `deterministic` are the backend defaults and do **not** need
 API keys.
 
+The default **Echo** LLM provider produces **deterministic grounded responses**. That
+is expected Version 1.0.0 behavior (not a live third-party chat model).
+
 Frontend actor headers default in code to the development stub IDs (no login in
 Version 1.0.0). Override only if you intentionally change tenant headers:
 
@@ -134,7 +150,7 @@ See `frontend/README.md` for the default UUIDs.
 ## Install backend
 
 ```bash
-cd backend
+cd /path/to/RAG-Enterprise/backend
 uv sync
 ```
 
@@ -144,17 +160,12 @@ uv sync
 - Dependencies install from the locked `uv.lock`
 - Command exits successfully (no traceback)
 
-Remain in `backend/` for database and backend start steps, or `cd` back when those
-sections say so.
-
 ---
 
 ## Install frontend
 
-From a **new** terminal (or after leaving `backend/`):
-
 ```bash
-cd frontend
+cd /path/to/RAG-Enterprise/frontend
 npm install
 ```
 
@@ -170,18 +181,28 @@ npm install
 
 ## Start infrastructure
 
-From the **repository root**:
+```bash
+cd /path/to/RAG-Enterprise
+docker compose up -d
+```
+
+### Verify PostgreSQL is healthy
+
+Wait until Postgres reports **healthy** before running migrations.
 
 ```bash
-docker compose up -d
+cd /path/to/RAG-Enterprise
 docker compose ps
 ```
 
 ### Expected result (infrastructure)
 
 - Containers `rag-enterprise-postgres` and `rag-enterprise-redis` are **running**
-- Postgres healthcheck becomes healthy (may take a few seconds)
+- `rag-enterprise-postgres` shows status **healthy** (not only “Up”)
 - Ports `5432` (Postgres) and `6379` (Redis) are published on localhost
+
+If Postgres is still starting, wait a few seconds and run `docker compose ps` again.
+Only continue to the Database section after Postgres is healthy.
 
 If containers fail to start, see [Troubleshooting](#troubleshooting).
 
@@ -189,10 +210,11 @@ If containers fail to start, see [Troubleshooting](#troubleshooting).
 
 ## Database
 
-Apply Alembic migrations from `backend/`:
+Run migrations only after [Start infrastructure](#start-infrastructure) shows a
+**healthy** Postgres container.
 
 ```bash
-cd backend
+cd /path/to/RAG-Enterprise/backend
 uv run alembic upgrade head
 ```
 
@@ -209,14 +231,12 @@ Knowledge, embeddings/indexing, and conversation tables are now available to the
 
 ## Start backend
 
-From `backend/`:
+Leave this terminal open after starting the process.
 
 ```bash
-cd backend
+cd /path/to/RAG-Enterprise/backend
 uv run uvicorn rag_enterprise.main:app --reload --host 0.0.0.0 --port 8000
 ```
-
-Leave this process running.
 
 | Check | URL |
 | --- | --- |
@@ -231,7 +251,7 @@ Leave this process running.
 2. Open <http://localhost:8000/api/v1/ready> — expect HTTP **200** (not **503**).
    Checks include configuration, DI, database, evaluation storage, and upload storage.
 3. Optionally open <http://localhost:8000/api/v1/system> — expect `"version": "1.0.0"`.
-4. Open <http://localhost:8000/docs> — interactive API docs load.
+4. Open <http://localhost:8000/docs> — interactive API docs (Swagger) load.
 
 Startup creates `FILE_STORAGE_ROOT` and `EVALUATION_STORAGE_ROOT` (default
 `eval-artifacts`) when missing.
@@ -240,17 +260,25 @@ Startup creates `FILE_STORAGE_ROOT` and `EVALUATION_STORAGE_ROOT` (default
 
 ## Start frontend
 
-In a **second** terminal:
+Use a **second** terminal (keep the backend terminal running).
 
 ```bash
-cd frontend
+cd /path/to/RAG-Enterprise/frontend
 npm run dev
 ```
 
 ### Expected result (frontend start)
 
 - Vite prints a local URL (normally <http://localhost:5173>)
-- Opening that URL shows the operator console (Knowledge / Chat / Evaluation)
+- Opening that URL shows the operator console
+
+Use the **left sidebar** to move between:
+
+| Sidebar item | Route | Purpose |
+| --- | --- | --- |
+| **Knowledge** | `/knowledge` | Knowledge bases, uploads, Process & Index, Publish |
+| **Chat** | `/chat` | Grounded Q&A with citations and Evidence |
+| **Evaluation** | `/evaluation` | Evaluation Dashboard (run artifacts) |
 
 Dev proxy: browser calls to `/api` are forwarded to `VITE_API_BASE_URL`
 (default `http://localhost:8000`).
@@ -261,40 +289,59 @@ Dev proxy: browser calls to `/api` are forwarded to `VITE_API_BASE_URL`
 
 Use the console at <http://localhost:5173>. Keep backend and frontend running.
 
-Optional corpus: files under `demo/knowledge/` (Persian policies). Any small `.txt`
-upload also works for a smoke test.
+Optional corpus: files under `/path/to/RAG-Enterprise/demo/knowledge/` (Persian
+policies). Any small `.txt` file also works for a smoke test.
+
+Recommended end-to-end UI flow:
+
+```text
+Knowledge
+  → Open Knowledge Base
+  → Upload
+  → Choose files
+  → Start Upload
+  → Process & Index
+  → Publish
+  → Chat (sidebar)
+  → Evidence panel
+  → Evaluation (sidebar)
+```
 
 ### 1. Create Knowledge Base
 
-1. Open **Knowledge**.
+1. In the sidebar, open **Knowledge**.
 2. Click **Create knowledge base**.
-3. Enter a name (for demo corpus, language `fa` is appropriate).
+3. Enter a name. For the demo corpus, set **Default language** to `fa`.
 4. Save.
 
 **Expected result:** The KB appears in the list with status **`draft`**.
 
-### 2. Upload document
+### 2. Upload
 
-1. Open the knowledge base.
-2. Create or select a document, then upload a file (for example one file from
-   `demo/knowledge/`).
-3. Complete the upload so a document version exists with status **`uploaded`**.
+1. In the Knowledge list, click the knowledge base **name** to open it.
+2. Click **Upload**.
+3. Choose one or more files (for example from `demo/knowledge/`).
+4. Click **Start upload**.
+5. Wait until the upload row shows **completed**.
 
-**Expected result:** The document shows a current version; processing status is
+Do **not** create documents manually — the Upload flow creates the document and
+version for you.
+
+**Expected result:** A new document appears in the KB. Open it; processing status is
 **`uploaded`** (not yet indexed).
 
 ### 3. Process & Index
 
-1. Open the document inspector.
+1. With the uploaded document selected, find the processing panel.
 2. Click **Process & Index**.
 3. Wait for the request to finish (synchronous; no background worker).
 
 **Expected result:** Progress reaches **Indexed** / `processing_status` =
-**`indexed`**. Chunk and embedding counts are greater than zero on a successful run.
+**`indexed`**.
 
 ### 4. Publish
 
-1. Return to the Knowledge base **list**.
+1. In the sidebar, open **Knowledge** again (knowledge base **list**).
 2. On the draft KB row, click **Publish**.
 
 **Expected result:** Status becomes **`active`**. Retrieval and Chat require an
@@ -302,33 +349,35 @@ active knowledge base.
 
 ### 5. Chat
 
-1. Open **Chat**.
+1. In the sidebar, open **Chat**.
 2. Select the published knowledge base.
-3. Ask a question grounded in the uploaded text (demo prompt examples:
+3. Ask a question grounded in the uploaded text (examples:
    `demo/questions/suggested-questions-fa.md`).
 
-**Expected result:** A reply is returned. With `LLM_BACKEND=echo`, the answer is the
-platform echo/grounded template path (not a third-party LLM). Prefer questions whose
-answers appear in the indexed text.
+**Expected result:** An assistant reply is returned. With the default **Echo**
+provider (`LLM_BACKEND=echo`), responses are **deterministic grounded** answers.
+That is expected Version 1.0.0 behavior (not a third-party LLM). Prefer questions
+whose answers appear in the indexed text.
 
 ### 6. Evidence panel
 
-1. On a grounded (non-abstained) answer, open the evidence / citations UI in Chat.
+1. After the assistant answer appears, use the **Evidence** panel in Chat
+   (desktop: side panel; on small screens use the Evidence tab if shown).
 
-**Expected result:** Citation or evidence entries reference retrieved chunks from
-your indexed document.
+**Expected result:** The Evidence panel appears after the answer and shows citation
+/ retrieved-chunk evidence for grounded replies.
 
 ### 7. Evaluation dashboard
 
-1. Open **Evaluation** in the operator console.
+1. In the sidebar, open **Evaluation**.
 
-**Expected result:** The Evaluation Dashboard loads and can list runs when Feature
-007 offline experiment artifacts exist under the evaluation storage root.
+**Expected result:** The Evaluation page opens. The dashboard can **legitimately be
+empty** until an offline evaluation run exists. An empty runs list on first boot is
+normal.
 
 > Offline evaluation **execution** (golden dataset → `EvaluationService`) is separate
 > from the dashboard. For the full demo evaluation set, follow
-> [Demo Guide](DEMO_GUIDE.md) and [Evaluation Guide](EVALUATION_GUIDE.md). An empty
-> runs list on first boot is normal until you execute an offline run.
+> [Demo Guide](DEMO_GUIDE.md) and [Evaluation Guide](EVALUATION_GUIDE.md).
 
 ---
 
@@ -338,22 +387,36 @@ Stop processes in reverse order of start when possible.
 
 ### Stop backend
 
-In the backend terminal: press `Ctrl+C` to stop uvicorn.
+In the terminal where uvicorn is running: press `Ctrl+C`.
 
 ### Stop frontend
 
-In the frontend terminal: press `Ctrl+C` to stop Vite.
+In the terminal where Vite is running: press `Ctrl+C`.
 
 ### Stop Docker
 
-From the **repository root**:
-
 ```bash
+cd /path/to/RAG-Enterprise
 docker compose down
 ```
 
 This stops and removes the Compose containers. Add `--volumes` **only** if you
 intend to delete local Postgres/Redis data (full database reset).
+
+---
+
+## First-run checklist
+
+The project is correctly running if **all** of the following are true:
+
+- [ ] `/ready` returns **200** — <http://localhost:8000/api/v1/ready>
+- [ ] Swagger opens — <http://localhost:8000/docs>
+- [ ] Frontend opens — <http://localhost:5173>
+- [ ] Knowledge Base is **Active** (Published)
+- [ ] Document is **Indexed** (Process & Index completed)
+- [ ] Chat answers (Echo grounded reply for an in-corpus question)
+- [ ] Evidence appears after the assistant answer
+- [ ] Evaluation page opens (empty run list is OK on first boot)
 
 ---
 
@@ -363,8 +426,12 @@ intend to delete local Postgres/Redis data (full database reset).
 
 **Symptom:** `docker compose up` fails immediately; Docker daemon errors.
 
-**Fix:** Start Docker Desktop (or the Docker service), wait until it is ready, retry
-`docker compose up -d`.
+**Fix:** Start Docker Desktop (or the Docker service), wait until it is ready, then:
+
+```bash
+cd /path/to/RAG-Enterprise
+docker compose up -d
+```
 
 ### Database unavailable
 
@@ -373,10 +440,17 @@ connect; backend logs connection refused / auth failure.
 
 **Fix:**
 
-1. `docker compose ps` — ensure Postgres is up and healthy.
+1. Confirm directory and health:
+
+   ```bash
+   cd /path/to/RAG-Enterprise
+   docker compose ps
+   ```
+
+   Postgres must be **healthy** before migrations or API traffic.
 2. Confirm `DATABASE_URL` / `POSTGRES_*` in `backend/.env` match Compose credentials
    in the root `.env`.
-3. Wait a few seconds after first boot for healthchecks to pass, then retry readiness.
+3. Wait until healthy, then retry readiness.
 
 ### Migration errors
 
@@ -384,10 +458,23 @@ connect; backend logs connection refused / auth failure.
 
 **Fix:**
 
-1. Run migrations only from `backend/` via `uv run alembic …`.
-2. Confirm Postgres is reachable with the same URL the backend uses.
+1. Ensure Postgres is healthy (`docker compose ps` from `/path/to/RAG-Enterprise`).
+2. Run migrations only from backend:
+
+   ```bash
+   cd /path/to/RAG-Enterprise/backend
+   uv run alembic upgrade head
+   ```
+
 3. If the database was partially initialized and you can discard local data:
-   `docker compose down --volumes`, then `docker compose up -d`, then migrate again.
+
+   ```bash
+   cd /path/to/RAG-Enterprise
+   docker compose down --volumes
+   docker compose up -d
+   ```
+
+   Wait for healthy Postgres, then migrate again from `backend/`.
 
 ### Storage folder
 
@@ -398,7 +485,7 @@ validation mentions `FILE_STORAGE_ROOT` / `EVALUATION_STORAGE_ROOT`.
 
 1. Ensure the process can create directories under the repo (or configured paths).
 2. Prefer relative defaults (`storage/uploads`, `eval-artifacts`) while running from
-   `backend/`.
+   `/path/to/RAG-Enterprise/backend`.
 3. Do not point `FILE_STORAGE_ROOT` at a read-only location.
 
 ### Port already used
@@ -418,7 +505,13 @@ validation mentions `FILE_STORAGE_ROOT` / `EVALUATION_STORAGE_ROOT`.
 
 **Symptom:** `ModuleNotFoundError` or uv cannot find the project.
 
-**Fix:** Always run backend commands from `backend/` with `uv run …` after `uv sync`.
+**Fix:**
+
+```bash
+cd /path/to/RAG-Enterprise/backend
+uv sync
+uv run uvicorn rag_enterprise.main:app --reload --host 0.0.0.0 --port 8000
+```
 
 ### Frontend cannot reach API
 
@@ -427,7 +520,13 @@ validation mentions `FILE_STORAGE_ROOT` / `EVALUATION_STORAGE_ROOT`.
 **Fix:**
 
 1. Confirm backend readiness at <http://localhost:8000/api/v1/ready>.
-2. Confirm `VITE_API_BASE_URL=http://localhost:8000` (or restart Vite after changing it).
+2. Restart Vite after changing any frontend env override:
+
+   ```bash
+   cd /path/to/RAG-Enterprise/frontend
+   npm run dev
+   ```
+
 3. Use the Vite origin (proxy `/api`) rather than calling a wrong host/port in the browser.
 
 ### Knowledge / Chat surprises
