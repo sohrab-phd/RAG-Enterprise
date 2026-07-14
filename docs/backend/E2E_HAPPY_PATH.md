@@ -58,15 +58,14 @@ The scenario passes only when:
 | Evidence gate | `GENERATION_MIN_EVIDENCE_SCORE` | `0.0` (deterministic vectors are not semantic) |
 | Database | `DATABASE_URL` | sqlite+aiosqlite memory |
 
-## Known orchestration gap
+## Process & index
 
-Public HTTP APIs currently stop at `processing_status=uploaded`. There is no worker
-endpoint for extraction/chunking/indexing yet. RC1.3 therefore:
+RC1.6 exposes synchronous orchestration:
 
-1. uses **existing HTTP APIs** for create KB, upload, retrieve, and chat;
-2. advances the version with **real** `DocumentProcessingService` + `IndexingService`
-   in-process (see `advance_uploaded_version_to_indexed`);
-3. does **not** mock retrieval, generation, indexing, or evaluation services.
+`POST /api/v1/workspaces/{workspace_id}/documents/{document_id}/process`
+
+See [PROCESS_AND_INDEX.md](PROCESS_AND_INDEX.md). The golden-path test uses that
+endpoint after upload.
 
 Knowledge bases are created as `draft`; retrieval requires `active`. The golden path
 activates an empty KB via `POST .../archive` then `POST .../restore` before uploads

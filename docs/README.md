@@ -44,6 +44,7 @@ Every major Version 1 document is reachable in **one click** from this page, and
 | [API Foundation](backend/API_FOUNDATION.md) | Envelopes, versioning, OpenAPI |
 | [Configuration (RC1.1)](backend/CONFIGURATION.md) | Startup validation |
 | [Local File Storage (RC1.6)](backend/LOCAL_FILE_STORAGE.md) | Durable upload binaries on disk |
+| [Process & Index (RC1.6)](backend/PROCESS_AND_INDEX.md) | Synchronous uploaded → indexed action |
 | [Operational Health (RC1.2)](backend/OPERATIONAL_HEALTH.md) | `/live`, `/ready`, `/system` |
 | [Persistence](backend/PERSISTENCE_LAYER.md) | Database session and models |
 | [Application layer](backend/APPLICATION_LAYER.md) | Commands, queries, results |

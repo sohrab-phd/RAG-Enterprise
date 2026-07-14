@@ -16,6 +16,7 @@ import type {
   InitiateUploadInput,
   KnowledgeBaseDetail,
   KnowledgeBaseSummary,
+  ProcessAndIndexResult,
   TreeView,
   UpdateDocumentInput,
   UploadSession,
@@ -166,4 +167,15 @@ export function createDocumentVersion(
       },
     },
   );
+}
+
+export function processAndIndexDocument(
+  documentId: string,
+  signal?: AbortSignal,
+): Promise<ProcessAndIndexResult> {
+  return apiRequest(workspacePath(`/documents/${documentId}/process`), {
+    method: "POST",
+    signal,
+    timeoutMs: 120_000,
+  });
 }

@@ -18,7 +18,6 @@ from rag_enterprise.db.base import ModelBase
 from rag_enterprise.evaluation.metrics import is_citation_accurate, is_grounded
 from rag_enterprise.evaluation.models import ExperimentThresholds
 from rag_enterprise.main import create_app
-from tests.e2e.helpers import advance_uploaded_version_to_indexed
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 GOLDEN = json.loads((FIXTURES / "golden_path.json").read_text(encoding="utf-8"))
@@ -151,17 +150,14 @@ async def test_rag_happy_path_persian_leave_policy(e2e_client: AsyncClient) -> N
     assert version.status_code == 201
     version_payload = _data(version)
     assert version_payload["processing_status"] == "uploaded"
-    version_id = uuid.UUID(str(version_payload["id"]))
 
-    # --- Document processing → chunk generation → embedding → indexing (real services) ---
-    chunk_id = await advance_uploaded_version_to_indexed(
-        session_factory=container.session_factory,
-        file_storage=container.file_storage,
-        indexing_service=container.indexing_service,
-        document_version_id=version_id,
-        organization_id=ORG_ID,
-        workspace_id=WORKSPACE_ID,
-    )
+    # --- Synchronous process & index (operator API) ---
+    process = await e2e_client.post(f"{base}/documents/{document_id}/process")
+    assert process.status_code == 200
+    process_data = _data(process)
+    assert process_data["current_status"] == "indexed"
+    assert int(process_data["processed_chunks"]) >= 1
+    assert int(process_data["indexed_embeddings"]) >= 1
 
     # --- Ask Persian question: retrieve evidence ---
     retrieve = await e2e_client.post(
@@ -179,6 +175,7 @@ async def test_rag_happy_path_persian_leave_policy(e2e_client: AsyncClient) -> N
     results = retrieve_data["results"]
     assert isinstance(results, list)
     assert any(GOLDEN["source_must_contain"] in str(item["text"]) for item in results)
+    chunk_id = uuid.UUID(str(results[0]["chunk_id"]))
 
     # --- Generate grounded answer ---
     chat = await e2e_client.post(

@@ -16,6 +16,7 @@ from rag_enterprise.application.interfaces.embedding import EmbeddingProvider
 from rag_enterprise.application.interfaces.file_storage import FileStorage
 from rag_enterprise.application.interfaces.llm import LLMProvider
 from rag_enterprise.application.queries.dispatcher import QueryDispatcher
+from rag_enterprise.chunking.service import ChunkingService
 from rag_enterprise.core.config.settings import Settings, get_settings
 from rag_enterprise.db.session.factory import create_engine_and_session_factory
 from rag_enterprise.evaluation.service import EvaluationService
@@ -26,6 +27,8 @@ from rag_enterprise.indexing.providers import BgeM3EmbeddingProvider
 from rag_enterprise.indexing.service import IndexingService
 from rag_enterprise.knowledge.infrastructure.filesystem import FileSystemStorage
 from rag_enterprise.knowledge.registration import register_knowledge_handlers
+from rag_enterprise.pipeline.service import ProcessAndIndexService
+from rag_enterprise.processing.service import DocumentProcessingService
 from rag_enterprise.retrieval.service import RetrievalService
 
 
@@ -40,6 +43,9 @@ class AppContainer:
     embedding_provider: EmbeddingProvider | None = None
     llm_provider: LLMProvider | None = None
     indexing_service: IndexingService | None = None
+    chunking_service: ChunkingService | None = None
+    document_processing_service: DocumentProcessingService | None = None
+    process_and_index_service: ProcessAndIndexService | None = None
     retrieval_service: RetrievalService | None = None
     generation_service: GenerationService | None = None
     evaluation_service: EvaluationService | None = None
@@ -85,6 +91,15 @@ class AppContainer:
                 batch_size=self.settings.embedding_batch_size,
                 retry_delays_seconds=(0.0, 0.0, 0.0),
             )
+            self.document_processing_service = DocumentProcessingService()
+            self.chunking_service = ChunkingService(session_factory=self.session_factory)
+            self.process_and_index_service = ProcessAndIndexService(
+                session_factory=self.session_factory,
+                file_storage=self.file_storage,
+                processing_service=self.document_processing_service,
+                chunking_service=self.chunking_service,
+                indexing_service=self.indexing_service,
+            )
             self.retrieval_service = RetrievalService(
                 session_factory=self.session_factory,
                 embedding_provider=self.embedding_provider,
@@ -124,6 +139,9 @@ class AppContainer:
             self.embedding_provider = None
             self.llm_provider = None
             self.indexing_service = None
+            self.chunking_service = None
+            self.document_processing_service = None
+            self.process_and_index_service = None
             self.retrieval_service = None
             self.generation_service = None
             self.evaluation_service = None

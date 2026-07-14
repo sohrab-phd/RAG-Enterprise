@@ -70,6 +70,14 @@ export type DocumentVersionSummary = {
   readonly created_at: string;
 };
 
+export type ProcessAndIndexResult = {
+  readonly current_status: string;
+  readonly processed_chunks: number;
+  readonly indexed_embeddings: number;
+  readonly warnings: readonly string[];
+  readonly document_version_id: string | null;
+};
+
 export type UploadSession = {
   readonly id: string;
   readonly status: string;

@@ -29,6 +29,10 @@ knowledge/
 Binary uploads use local disk via [Local File Storage (RC1.6)](LOCAL_FILE_STORAGE.md)
 (`FILE_STORAGE_ROOT`, default `storage/uploads`). Tests keep `InMemoryFileStorage`.
 
+After upload, operators run synchronous
+[Process & Index](PROCESS_AND_INDEX.md)
+(`POST .../documents/{document_id}/process`).
+
 ## API surface
 
 Base path: `/api/v1/workspaces/{workspace_id}/knowledge-bases/...`

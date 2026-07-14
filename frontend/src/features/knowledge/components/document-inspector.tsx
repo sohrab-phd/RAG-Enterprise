@@ -128,6 +128,8 @@ export function DocumentInspector({
           Processing status
         </h3>
         <ProcessingStatusPanel
+          knowledgeBaseId={knowledgeBaseId}
+          documentId={document.id}
           version={versionQuery.data ?? null}
           hasCurrentVersion={Boolean(document.current_version_id)}
         />

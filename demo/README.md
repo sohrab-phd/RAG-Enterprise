@@ -52,9 +52,10 @@ edit content so evaluation remains aligned.
 
 ## 2. Run indexing
 
-After upload, advance each document version through processing → chunking →
-embedding → indexing until `processing_status` is `indexed` (same pipeline as
-RC1.3). Retrieval and Chat only see **indexed** content.
+After upload, open the document in Knowledge and click **Process & Index**
+(or call `POST /api/v1/workspaces/{workspace_id}/documents/{document_id}/process`).
+Wait for `processing_status` = `indexed`. Retrieval and Chat only see indexed
+content. See [Process & Index](../docs/backend/PROCESS_AND_INDEX.md).
 
 Confirm with retrieve smoke checks before Chat, for example:
 
