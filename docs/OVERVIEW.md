@@ -9,9 +9,9 @@ RAG-enterprise is a monorepo for a production-oriented **Retrieval-Augmented
 Generation** platform: curated knowledge bases, dense retrieval, grounded chat with
 citations (or abstention), offline evaluation, and an operator console.
 
-Version 1.0.0 focuses on a working knowledge → retrieve → generate → evaluate loop with
-a public Persian **demo** corpus. Full multi-tenant auth, LangGraph agents, and
-production topology remain forward-looking.
+Version 1.0.0 ships a working knowledge → retrieve → generate → evaluate loop with
+a public Persian **demo** corpus. Authentication, background workers, streaming,
+agent tools, and multi-node deployment are **Version 2** ([Roadmap](ROADMAP.md)).
 
 ## Who it is for
 
@@ -43,7 +43,7 @@ Details: [Feature Map](FEATURE_MAP.md).
 | `demo/` | Official V1 Persian demo knowledge + evaluation set |
 | `docs/` | Guides, architecture notes, domain/data docs |
 | `specs/` | Feature specifications (authoritative behavior) |
-| `infrastructure/` | Future IaC; local Compose lives at repo root |
+| `infrastructure/` | IaC placeholder; local Compose lives at repo root (multi-node = Version 2) |
 | `agents/` / `.cursor/rules/` | AI-assisted engineering governance |
 
 ## How to get started

@@ -1,6 +1,7 @@
 # Cross-Cutting Integration Tests
 
-> **Status:** Placeholder for future multi-package suites.
+> **Status:** Placeholder for cross-package suites. Backend/frontend tests live in
+> `backend/tests/` and `frontend/` respectively.
 
 ## Purpose
 

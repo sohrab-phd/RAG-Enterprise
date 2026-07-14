@@ -40,15 +40,17 @@ conversations, or AI provider settings.
 
 ### Out of scope (this spec)
 
-| Area | Owner spec / context |
+Owned by other Version 1.0.0 specs / modules (or Version 2 where noted):
+
+| Area | Owner |
 | --- | --- |
-| Chunking, embedding, vector index | Knowledge Indexing (future spec) |
-| Retrieval configuration | Retrieval Configuration |
-| Chat and citations | Conversational Experience |
-| User authentication and membership | Identity and Tenant Administration |
-| OCR execution | Future integration via `IntegrationConnector` |
-| External connector sync | Future Integrations |
-| Full-text search API | Retrieval / search surface (future spec) |
+| Chunking, embedding, vector index | Specs 003–004 · Process & Index |
+| Retrieval | Spec 005 |
+| Chat and citations | Spec 006 |
+| User authentication and membership | **Version 2** (Identity) |
+| OCR execution | **Version 2** (`IntegrationConnector`) |
+| External connector sync | **Version 2** (Integrations) |
+| Full-text / hybrid search API | **Version 2** |
 
 ## Goals
 
@@ -65,7 +67,7 @@ conversations, or AI provider settings.
 - Replacing a full enterprise content management system (ECM).
 - Real-time collaborative editing of document content.
 - Automatic translation or multilingual generation (metadata only in v1).
-- Legal hold workflow UI (policy hooks only; full workflow is future).
+- Legal hold workflow UI (policy hooks only; full workflow is **Version 2**).
 - Cross-workspace knowledge federation.
 
 ## Business rules

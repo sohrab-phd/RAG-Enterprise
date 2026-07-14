@@ -1,13 +1,18 @@
-# Official Demo Workspace (Version 1)
+# Official Demo Workspace (Version 1.0.0)
 
-> **Release candidate:** RC1.4  
+> **Release:** 1.0.0 (RC1.4 corpus)  
 > **Audience:** operators, reviewers, and public GitHub visitors  
 > **Content:** synthetic Persian enterprise policies for شرکت نوین‌پرداز (NovinPardaz)  
 > **Safe for public GitHub:** no real customers, secrets, or PII
 
-This folder is the **official demonstration corpus** for RAG-enterprise Version 1.
-Import these documents into a knowledge base, index them, ask the suggested questions
-in Chat, then run Feature 007 evaluation against the golden set.
+This folder is the **official demonstration corpus** for RAG-enterprise Version 1.0.0.
+
+Supported operator workflow (see [Demo Guide](../docs/DEMO_GUIDE.md)):
+
+```text
+Create KB → Upload documents → Process & Index → Publish
+  → Ask questions → View citations → Run evaluation → View Evaluation Dashboard
+```
 
 ```text
 demo/
@@ -33,15 +38,17 @@ demo/
 Documents **cross-reference** each other by title. Keep numbers unchanged when you
 edit content so evaluation remains aligned.
 
-## 1. Import demo documents
+## 1. Create KB
 
 1. Start the backend and open the frontend Knowledge UI
    (see [docs/DEVELOPMENT.md](../docs/DEVELOPMENT.md)).
 2. Create a knowledge base, for example `نوین‌پرداز — سیاست‌های کارکنان`,
-   with default language `fa`.
-3. Activate the knowledge base (retrieval requires status `active`).
-4. Upload **all four** files from `demo/knowledge/` (see table below).
-5. Use declared language `fa` and treat each file as one document.
+   with default language `fa` (status starts as `draft`).
+
+## 2. Upload documents
+
+Upload **all four** files from `demo/knowledge/` (declared language `fa`; one
+document per file):
 
 | File | Title |
 | --- | --- |
@@ -50,32 +57,35 @@ edit content so evaluation remains aligned.
 | `03-remote-work-policy-fa.txt` | سیاست دورکاری |
 | `04-travel-expense-policy-fa.txt` | سیاست هزینه سفر |
 
-## 2. Run indexing
+## 3. Process & Index
 
-After upload, open the document in Knowledge and click **Process & Index**
+For each document, open it in Knowledge and click **Process & Index**
 (or call `POST /api/v1/workspaces/{workspace_id}/documents/{document_id}/process`).
-Wait for `processing_status` = `indexed`. Retrieval and Chat only see indexed
-content. See [Process & Index](../docs/backend/PROCESS_AND_INDEX.md).
+Wait for `processing_status` = `indexed`. See
+[Process & Index](../docs/backend/PROCESS_AND_INDEX.md).
 
-Confirm with retrieve smoke checks before Chat, for example:
+## 4. Publish
+
+On the Knowledge list, click **Publish** so the knowledge base becomes `active`.
+Retrieval and Chat require an active KB. See
+[Knowledge management](../docs/backend/KNOWLEDGE_MANAGEMENT.md).
+
+## 5. Ask questions and view citations
+
+1. Open the Chat route in the frontend.
+2. Select the published demo knowledge base.
+3. Ask in Persian. Prefer grounded policy questions first; out-of-corpus prompts
+   should abstain.
+4. Confirm citation chips / evidence for grounded answers.
+
+Suggested prompts: [`questions/suggested-questions-fa.md`](questions/suggested-questions-fa.md).
+
+Smoke checks:
 
 - مرخصی استحقاقی سالانه چند روز است؟
 - سقف اسکان روزانه در سفر داخلی چقدر است؟
 
-## 3. Open Chat
-
-1. Open the Chat route in the frontend.
-2. Select the demo knowledge base.
-3. Ask in Persian. Prefer grounded policy questions first; out-of-corpus prompts
-   should abstain.
-
-## 4. Suggested questions
-
-Use the curated list in [`questions/suggested-questions-fa.md`](questions/suggested-questions-fa.md)
-(~20 prompts). Topics cover handbook, leave, remote work, travel, and a few
-deliberate abstention cases.
-
-## 5. Run evaluation (Feature 007)
+## 6. Run evaluation (Feature 007)
 
 Golden records live under [`evaluation/`](evaluation/):
 
@@ -100,7 +110,7 @@ Then run an experiment with `EvaluationService` (see
 - `dataset_id`: `novinpardaz-demo-fa`
 - `dataset_version`: `1.0.0`
 - `dataset_path`: path to the prepared directory
-- `knowledge_base_id`: **your** activated demo KB id
+- `knowledge_base_id`: **your** published (`active`) demo KB id
 
 ### Citation IDs
 
@@ -115,6 +125,12 @@ Before scoring against a live index:
    `passage_contains`).
 
 Rows tagged `abstain` keep empty citations and `expect_abstention: true`.
+
+## 7. View Evaluation Dashboard
+
+After a run completes, open the frontend **Evaluation** module to inspect run
+summaries and detail. Experiment **execution** remains offline in Version 1.0.0;
+the dashboard reads Feature 007 filesystem artifacts.
 
 ## Quality bar for this demo
 

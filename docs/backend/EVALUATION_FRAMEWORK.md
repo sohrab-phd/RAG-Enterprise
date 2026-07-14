@@ -6,7 +6,9 @@
 ## Purpose
 
 Measure retrieval and RAG generation quality with a versioned golden dataset and
-reproducible offline experiments. No UI, dashboards, charts, or optimization.
+reproducible **offline** experiments. Version 1.0.0 does not optimize ranking or
+prompts. The operator **Evaluation Dashboard** (Feature 008) reads run artifacts;
+it does not execute experiments.
 
 ## Pipeline
 

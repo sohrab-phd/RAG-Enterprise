@@ -6,8 +6,10 @@
 ## Overview
 
 Feature 001 delivers workspace-scoped knowledge base administration, folder hierarchy,
-document lifecycle, upload sessions, and document versioning. Chunking, embeddings,
-retrieval, and chat are intentionally excluded.
+document lifecycle, upload sessions, document versioning, and **Publish**
+(`draft` → `active`). Processing, chunking, embeddings, retrieval, and chat live in
+sibling modules and are orchestrated for operators via
+[Process & Index](PROCESS_AND_INDEX.md).
 
 ## Package layout
 
@@ -46,8 +48,8 @@ Draft → Publish → Active → Archive → Restore → Active
 | Archive | `POST .../knowledge-bases/{id}/archive` |
 | Restore (`archived` → `active`) | `POST .../knowledge-bases/{id}/restore` |
 
-Do **not** use archive → restore to activate a draft KB. Publishing does not change
-retrieval rules: search still requires an `active` knowledge base.
+Publish is the supported draft → active transition. Archive / restore remain for
+lifecycle after a KB has been active. Retrieval still requires status `active`.
 
 ## API surface
 

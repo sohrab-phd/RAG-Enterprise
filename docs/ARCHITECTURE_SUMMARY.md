@@ -16,13 +16,14 @@ Operator console (frontend)
         │  HTTP /api/v1
         ▼
 FastAPI app (create_app + lifespan)
-  ├─ RC1.1 configuration validation
+  ├─ Configuration validation
   ├─ Structured logging
-  ├─ AppContainer (DB, storage, providers, services)
-  └─ Routes: knowledge · retrieve · chat · evaluations · health
+  ├─ AppContainer (DB, FileSystemStorage, providers, services)
+  └─ Routes: knowledge · process · retrieve · chat · evaluations · health
         │
         ▼
-PostgreSQL (+ pgvector)     Redis (local / future)
+PostgreSQL (+ pgvector)     Redis (local Compose; not required for core RAG path)
+Local upload/extracted files (FILE_STORAGE_ROOT)
 Evaluation artifacts (filesystem)
 ```
 
@@ -30,16 +31,22 @@ Process lifecycle and health endpoints:
 [Architecture notes §Backend](ARCHITECTURE.md#4-backend-architecture) and
 [Operational Health](backend/OPERATIONAL_HEALTH.md).
 
+Storage: [Local File Storage](backend/LOCAL_FILE_STORAGE.md)
+(`FileSystemStorage` at runtime; `InMemoryFileStorage` in tests only).
+
 ## RAG pipeline (Version 1.0.0)
 
 ```text
-001 Knowledge → 002 Process* → 003 Chunk* → 004 Embed → 005 Retrieve → 006 Generate
-                                                                         ↑
-                                                              007 Evaluation
+Create/Publish KB
+  → Upload (local filesystem)
+  → Process & Index (002 process → 003 chunk → 004 embed)
+  → 005 Retrieve → 006 Generate (+ citations)
+  → 007 Offline evaluation (+ Evaluation Dashboard reads)
 ```
 
-\*Processing/chunking HTTP workers are still maturing; see
-[E2E Happy Path](backend/E2E_HAPPY_PATH.md) and [Feature Map](FEATURE_MAP.md).
+Operator orchestration:
+[Process & Index](backend/PROCESS_AND_INDEX.md) ·
+[Publish workflow](backend/KNOWLEDGE_MANAGEMENT.md#knowledge-base-lifecycle).
 
 Module docs:
 
@@ -83,6 +90,7 @@ Operator console modules and stack:
 - Local topology: [Deployment Guide](DEPLOYMENT.md)
 - Probes and inventory: [Operational Health](backend/OPERATIONAL_HEALTH.md)
 - Evolving notes: [ARCHITECTURE.md](ARCHITECTURE.md) (§Observability, Security, Deployment)
+- Multi-node production topology: **Version 2** ([Roadmap](ROADMAP.md))
 
 ## Related documents
 

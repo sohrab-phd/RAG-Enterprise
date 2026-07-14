@@ -26,15 +26,15 @@ Every major Version 1.0.0 document is reachable in **one click** from this page,
 | [Architecture notes](ARCHITECTURE.md) | Evolving runtime notes (backend lifecycle, health) |
 | [Feature Map](FEATURE_MAP.md) | Specs 001–008 and backend module docs |
 | [Product Requirements](PRD.md) | Product skeleton (not a living feature inventory) |
-| [Tech Stack](TECH_STACK.md) | Adopted and planned technologies |
-| [Roadmap](ROADMAP.md) | Directional sequencing |
+| [Tech Stack](TECH_STACK.md) | Adopted Version 1.0.0 stack (+ Version 2 notes) |
+| [Roadmap](ROADMAP.md) | Version 1.0.0 complete · Version 2 planned |
 | [ADR index](DECISIONS.md) | Architecture Decision Records |
 
 ## Operate and evaluate
 
 | Guide | Purpose |
 | --- | --- |
-| [Deployment Guide](DEPLOYMENT.md) | Local Compose today; production deferred |
+| [Deployment Guide](DEPLOYMENT.md) | Local Compose (V1.0.0); multi-node = Version 2 |
 | [Evaluation Guide](EVALUATION_GUIDE.md) | Feature 007 offline evaluation |
 | [Demo Guide](DEMO_GUIDE.md) | Official Persian demo workspace (RC1.4) |
 | [E2E Happy Path (RC1.3)](backend/E2E_HAPPY_PATH.md) | Single automated golden-path test |

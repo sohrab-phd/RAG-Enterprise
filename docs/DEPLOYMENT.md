@@ -39,14 +39,17 @@ Application settings are documented alongside Compose variables in `.env.example
 Upload binaries persist under `FILE_STORAGE_ROOT` (default `storage/uploads`);
 see [Local File Storage](backend/LOCAL_FILE_STORAGE.md).
 
-## Production (deferred)
+## Production (Version 2)
 
-Production topology, secret managers, and environment overlays are **not** defined
-yet. Placeholders and assumptions:
+Multi-node production topology, secret managers, and environment overlays are
+**Version 2**. Version 1.0.0 supports local single-node Compose + process hosts.
+
+Placeholders:
 
 - [infrastructure/README.md](../infrastructure/README.md)
-- [ARCHITECTURE.md §Deployment Topology](ARCHITECTURE.md#10-deployment-topology-future)
+- [ARCHITECTURE.md §Deployment Topology](ARCHITECTURE.md#10-deployment-topology)
 - [Architecture Summary](ARCHITECTURE_SUMMARY.md)
+- [Roadmap](ROADMAP.md)
 
 Do not treat local Compose credentials as production-ready.
 

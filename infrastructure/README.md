@@ -8,15 +8,16 @@ Compose services at the repository root carry OCI / project labels
 
 ## Purpose
 
-Hold future IaC and document today’s local dependency stack. Runtime Compose file
-lives at the **repository root** (`docker-compose.yml`), not under this folder yet.
+Document today’s local dependency stack and hold IaC for **Version 2** multi-node
+deployment. Runtime Compose file lives at the **repository root**
+(`docker-compose.yml`), not under this folder yet.
 
 ## Local development
 
 | Service | Image | Purpose |
 | --- | --- | --- |
 | postgres | `pgvector/pgvector:pg16` | PostgreSQL with pgvector |
-| redis | `redis:7-alpine` | Cache / broker (future use) |
+| redis | `redis:7-alpine` | Local Compose service (not required for core V1 RAG path) |
 
 How to start and configure: [Deployment Guide](../docs/DEPLOYMENT.md) and
 [Development Guide](../docs/DEVELOPMENT.md).

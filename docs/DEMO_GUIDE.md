@@ -6,21 +6,43 @@
 
 ## Purpose
 
-Help reviewers and newcomers run the public Persian **نوین‌پرداز** demo end to end:
-import documents, index, chat, then evaluate.
+Help reviewers and newcomers run the public Persian **نوین‌پرداز** demo using the
+supported operator workflow end to end.
 
 ## Audience
 
 Demo operators, PR reviewers, and public GitHub visitors.
 
-## Steps (summary)
+## Supported operator workflow
 
-1. **Import** the four files under `demo/knowledge/` into an **active** knowledge base.  
-2. **Index** until document versions are retrieval-ready.  
-3. **Open Chat** and try prompts from `demo/questions/suggested-questions-fa.md`.  
-4. **Run evaluation** with `demo/evaluation/` (Feature 007 layout).
+```text
+Create KB
+  → Upload documents
+  → Process & Index
+  → Publish
+  → Ask questions
+  → View citations
+  → Run evaluation
+  → View Evaluation Dashboard
+```
 
-Full commands, company fact table, and citation rebinding notes:
+### Steps
+
+1. **Create KB** — In Knowledge, create a knowledge base (default language `fa`).
+   Status starts as `draft`.
+2. **Upload documents** — Import all four files from `demo/knowledge/`.
+3. **Process & Index** — For each document, click **Process & Index** (or call
+   `POST .../documents/{document_id}/process`) until status is `indexed`.
+4. **Publish** — On the Knowledge list, click **Publish** so the KB becomes
+   `active` (required for retrieval and chat).
+5. **Ask questions** — Open Chat, select the demo KB, use prompts from
+   `demo/questions/suggested-questions-fa.md`.
+6. **View citations** — Confirm grounded answers show citation evidence.
+7. **Run evaluation** — Prepare and run the offline Feature 007 set under
+   `demo/evaluation/` (see [demo/README.md](../demo/README.md)).
+8. **View Evaluation Dashboard** — Inspect runs in the frontend Evaluation module.
+
+Details, company facts, and citation ID rebinding:
 [demo/README.md](../demo/README.md).
 
 ## Artifacts
@@ -34,6 +56,8 @@ Full commands, company fact table, and citation rebinding notes:
 ## Related documents
 
 - [Evaluation Guide](EVALUATION_GUIDE.md)
+- [Process & Index](backend/PROCESS_AND_INDEX.md)
+- [Knowledge management](backend/KNOWLEDGE_MANAGEMENT.md)
 - [E2E Happy Path](backend/E2E_HAPPY_PATH.md)
 - [Feature Map](FEATURE_MAP.md)
 - [Documentation index](README.md)

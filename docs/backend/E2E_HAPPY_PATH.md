@@ -28,7 +28,6 @@ Start application
 | Automated test | `backend/tests/e2e/test_rag_happy_path.py` |
 | Sample document | `backend/tests/e2e/fixtures/company_leave_policy_fa.txt` |
 | Expected question / answer pattern | `backend/tests/e2e/fixtures/golden_path.json` |
-| Pipeline bridge helper | `backend/tests/e2e/helpers/pipeline.py` |
 
 ### Golden expectations
 
