@@ -53,6 +53,7 @@ Draft | Review | Approved | Implemented
 | [005-retrieval](005-retrieval/SPEC.md) | Dense vector retrieval with metadata filters | Implemented |
 | [006-rag-generation](006-rag-generation/SPEC.md) | Grounded LLM answers with citations and abstention | Implemented |
 | [007-evaluation-framework](007-evaluation-framework/README.md) | Offline golden-dataset evaluation of retrieval and generation | Implemented |
+| [008-frontend](008-frontend/README.md) | Enterprise web console (Knowledge, Chat, Evaluation, Experiments, Settings) — design only | Draft |
 | `authentication.md` | User authentication and session management | TODO |
 | `document-ingestion.md` | Upload, parse, and chunk documents | TODO |
 | `vector-search.md` | Embedding storage and similarity search | TODO |
