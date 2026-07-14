@@ -52,7 +52,7 @@ Draft | Review | Approved | Implemented
 | [004-embeddings](004-embeddings/SPEC.md) | Dense embeddings with BGE-M3 and pgvector storage | Implemented |
 | [005-retrieval](005-retrieval/SPEC.md) | Dense vector retrieval with metadata filters | Implemented |
 | [006-rag-generation](006-rag-generation/SPEC.md) | Grounded LLM answers with citations and abstention | Implemented |
-| [007-evaluation-framework](007-evaluation-framework/README.md) | Offline golden-dataset evaluation of retrieval and generation | Draft |
+| [007-evaluation-framework](007-evaluation-framework/README.md) | Offline golden-dataset evaluation of retrieval and generation | Implemented |
 | `authentication.md` | User authentication and session management | TODO |
 | `document-ingestion.md` | Upload, parse, and chunk documents | TODO |
 | `vector-search.md` | Embedding storage and similarity search | TODO |

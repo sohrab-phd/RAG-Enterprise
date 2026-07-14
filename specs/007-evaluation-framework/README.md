@@ -1,7 +1,7 @@
 # Evaluation Framework
 
 > **Spec ID:** 007  
-> **Status:** Draft  
+> **Status:** Implemented  
 > **Goal:** Measure retrieval and RAG generation quality with a versioned golden dataset and reproducible experiments.  
 > **Scope:** Offline evaluation framework only — no UI, dashboards, optimization, or chatbot changes.
 
@@ -71,17 +71,19 @@ Evaluation **calls** retrieval and generation as black boxes. It does not reimpl
 | Scope | One knowledge base per experiment (v1) |
 | Artifacts | Dataset + results in object storage; run metadata in PostgreSQL (later) |
 
-## Suggested package (future implementation)
+## Package
 
 ```text
 backend/src/rag_enterprise/evaluation/
-  dataset.py
+  dataset/
   metrics/
-  runner.py
-  models.py
+  runner/
+  storage/
+  models/
+  service.py
 ```
 
-This folder is **design only** until an implementation task is approved.
+See [EVALUATION_FRAMEWORK.md](../../docs/backend/EVALUATION_FRAMEWORK.md).
 
 ## Related documents
 
