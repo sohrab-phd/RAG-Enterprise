@@ -1,15 +1,7 @@
 import * as React from "react";
-import { useLocation } from "react-router-dom";
 
-import { ModulePlaceholder } from "@/pages/module-placeholder";
+import { KnowledgeBaseList } from "@/features/knowledge/components/knowledge-base-list";
 
 export function KnowledgePage(): React.JSX.Element {
-  const { pathname } = useLocation();
-  return (
-    <ModulePlaceholder
-      title="Knowledge"
-      description="Manage knowledge bases, folder trees, uploads, metadata, and processing status."
-      routeHint={pathname}
-    />
-  );
+  return <KnowledgeBaseList />;
 }

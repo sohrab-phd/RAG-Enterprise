@@ -1,5 +1,6 @@
 import * as React from "react";
 
+import { getAppConfig } from "@/lib/config";
 import { cn } from "@/lib/utils";
 
 type WorkspaceBadgeProps = {
@@ -7,10 +8,8 @@ type WorkspaceBadgeProps = {
   readonly className?: string;
 };
 
-const DEFAULT_WORKSPACE = import.meta.env.VITE_WORKSPACE_NAME?.trim() || "Workspace";
-
 export function WorkspaceBadge({
-  name = DEFAULT_WORKSPACE,
+  name = getAppConfig().workspaceName,
   className,
 }: WorkspaceBadgeProps): React.JSX.Element {
   return (

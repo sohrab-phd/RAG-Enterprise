@@ -23,9 +23,7 @@ function getInitialTheme(): Theme {
   if (typeof window.matchMedia !== "function") {
     return "light";
   }
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
 export function ThemeProvider({

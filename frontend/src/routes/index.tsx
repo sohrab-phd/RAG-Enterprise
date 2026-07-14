@@ -4,6 +4,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { ChatPage } from "@/pages/chat-page";
 import { EvaluationPage } from "@/pages/evaluation-page";
 import { ExperimentsPage } from "@/pages/experiments-page";
+import { KnowledgeBrowserPage } from "@/pages/knowledge-browser-page";
 import { KnowledgePage } from "@/pages/knowledge-page";
 import { NotFoundPage } from "@/pages/not-found-page";
 import { RouteErrorPage } from "@/pages/route-error-page";
@@ -17,14 +18,14 @@ export const appRoutes: RouteObject[] = [
     children: [
       { index: true, element: <Navigate to="/knowledge" replace /> },
       { path: "knowledge", element: <KnowledgePage /> },
-      { path: "knowledge/:kbId", element: <KnowledgePage /> },
+      { path: "knowledge/:kbId", element: <KnowledgeBrowserPage /> },
       {
         path: "knowledge/:kbId/documents/:documentId",
-        element: <KnowledgePage />,
+        element: <KnowledgeBrowserPage />,
       },
       {
         path: "knowledge/:kbId/documents/:documentId/versions/:versionId",
-        element: <KnowledgePage />,
+        element: <KnowledgeBrowserPage />,
       },
       { path: "chat", element: <ChatPage /> },
       { path: "chat/:conversationId", element: <ChatPage /> },
