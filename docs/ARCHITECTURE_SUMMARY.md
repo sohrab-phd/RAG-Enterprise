@@ -1,11 +1,12 @@
 # Architecture Summary
 
-> **Purpose:** One-page Version 1 architecture map.  
+> **Purpose:** One-page Version 1.0.0 architecture map.  
+> **Release:** 1.0.0  
 > **Rule:** Summarize with links—do not copy ADR or spec prose here.
 
 ## Purpose
 
-Describe how the monorepo fits together for Version 1: API runtime, data stores,
+Describe how the monorepo fits together for Version 1.0.0: API runtime, data stores,
 RAG pipeline boundaries, and where durable decisions live.
 
 ## Runtime sketch
@@ -29,7 +30,7 @@ Process lifecycle and health endpoints:
 [Architecture notes §Backend](ARCHITECTURE.md#4-backend-architecture) and
 [Operational Health](backend/OPERATIONAL_HEALTH.md).
 
-## RAG pipeline (Version 1)
+## RAG pipeline (Version 1.0.0)
 
 ```text
 001 Knowledge → 002 Process* → 003 Chunk* → 004 Embed → 005 Retrieve → 006 Generate

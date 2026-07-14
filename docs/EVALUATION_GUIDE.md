@@ -1,6 +1,7 @@
 # Evaluation Guide
 
-> **Purpose:** How to measure RAG quality with Feature 007 in Version 1.  
+> **Purpose:** How to measure RAG quality with Feature 007 in Version 1.0.0.  
+> **Release:** 1.0.0  
 > **Authority:** Dataset and metric contracts live in the spec and backend docs.
 
 ## Purpose

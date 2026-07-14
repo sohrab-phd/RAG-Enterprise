@@ -1,5 +1,7 @@
 # RAG-enterprise Frontend
 
+> **Release:** 1.0.0 (`package.json` version)
+
 Enterprise operator console (Feature 008). Knowledge, Chat, and Evaluation dashboard
 are implemented; Experiments / Settings remain placeholders.
 

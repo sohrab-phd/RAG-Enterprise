@@ -1,5 +1,7 @@
 # RAG-enterprise Backend
 
+> **Release:** 1.0.0 (`rag_enterprise.__version__`)
+
 FastAPI backend managed with [uv](https://docs.astral.sh/uv/). Source lives in
 `src/rag_enterprise/`; tests in `tests/`.
 

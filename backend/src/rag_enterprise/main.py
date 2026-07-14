@@ -2,6 +2,7 @@
 
 from fastapi import FastAPI
 
+from rag_enterprise import __version__
 from rag_enterprise.api.common.handlers import register_exception_handlers
 from rag_enterprise.api.common.middleware import RequestContextMiddleware, RequestLoggingMiddleware
 from rag_enterprise.api.common.openapi import configure_openapi
@@ -16,7 +17,7 @@ def create_app() -> FastAPI:
 
     app = FastAPI(
         title=settings.app_name,
-        version="0.1.0",
+        version=__version__,
         description="Production-grade RAG platform API",
         lifespan=lifespan,
         docs_url="/docs" if not settings.is_production else None,

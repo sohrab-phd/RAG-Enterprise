@@ -1,11 +1,12 @@
 # Feature Map
 
-> **Purpose:** Navigate Version 1 capabilities without opening every folder.  
+> **Purpose:** Navigate Version 1.0.0 capabilities without opening every folder.  
+> **Release:** 1.0.0  
 > **Authority:** Behavior details live in `specs/` and backend module docs—this page only maps them.
 
 ## Purpose
 
-Show which features exist in Version 1, their specification entry points, and the
+Show which features exist in Version 1.0.0, their specification entry points, and the
 backend documentation that describes the shipped implementation notes.
 
 ## Spec map (001–008)

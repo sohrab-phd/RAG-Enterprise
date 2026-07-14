@@ -1,6 +1,7 @@
 # Deployment Guide
 
-> **Purpose:** How Version 1 is run today and what is deliberately deferred.  
+> **Purpose:** How Version 1.0.0 is run today and what is deliberately deferred.  
+> **Release:** 1.0.0  
 > **Status:** Local Docker Compose is supported; production IaC is not yet shipped.
 
 ## Purpose

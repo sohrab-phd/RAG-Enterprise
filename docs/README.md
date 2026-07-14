@@ -1,16 +1,18 @@
 # Documentation index
 
-> **Version:** 1 (RC1.5 documentation polish)  
+> **Version:** 1.0.0  
 > **Rule:** Prefer this index and short guide pages; open feature specs and ADRs for detail—do not copy them here.
 
-Every major Version 1 document is reachable in **one click** from this page, and in
+Every major Version 1.0.0 document is reachable in **one click** from this page, and in
 **at most two clicks** from the [repository root README](../README.md).
 
 ## Start here
 
 | Guide | Purpose |
 | --- | --- |
-| [Project Overview](OVERVIEW.md) | What RAG-enterprise is, who it is for, and V1 scope |
+| [Project Overview](OVERVIEW.md) | What RAG-enterprise is, who it is for, and V1.0.0 scope |
+| [Release Notes](../RELEASE_NOTES.md) | Concise GitHub-ready notes for v1.0.0 |
+| [Changelog](../CHANGELOG.md) | Version history (Keep a Changelog) |
 | [Quick Start](../README.md#quick-start) | Fastest local path (also expanded below via Development) |
 | [Development Guide](DEVELOPMENT.md) | Prerequisites, Compose, backend/frontend setup, quality gates |
 | [Development Workflow](DEVELOPMENT_WORKFLOW.md) | Day-to-day contribution process |
@@ -20,7 +22,7 @@ Every major Version 1 document is reachable in **one click** from this page, and
 
 | Guide | Purpose |
 | --- | --- |
-| [Architecture Summary](ARCHITECTURE_SUMMARY.md) | V1 system picture + ADR map (links only) |
+| [Architecture Summary](ARCHITECTURE_SUMMARY.md) | V1.0.0 system picture + ADR map (links only) |
 | [Architecture notes](ARCHITECTURE.md) | Evolving runtime notes (backend lifecycle, health) |
 | [Feature Map](FEATURE_MAP.md) | Specs 001–008 and backend module docs |
 | [Product Requirements](PRD.md) | Product skeleton (not a living feature inventory) |
@@ -73,7 +75,7 @@ Every major Version 1 document is reachable in **one click** from this page, and
 
 ## Consistent guide layout
 
-Version 1 guide pages use this section order where applicable:
+Version 1.0.0 guide pages use this section order where applicable:
 
 1. Purpose
 2. Audience

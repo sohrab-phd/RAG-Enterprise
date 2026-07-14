@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from rag_enterprise import __version__
 from rag_enterprise.core.config.settings import get_settings
 from rag_enterprise.core.config.validation import (
     ConfigurationError,
@@ -52,6 +53,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         "application_starting",
         app_name=settings.app_name,
         environment=settings.app_env,
+        version=__version__,
     )
 
     try:

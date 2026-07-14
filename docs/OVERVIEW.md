@@ -1,7 +1,7 @@
 # Project Overview
 
 > **Audience:** newcomers, reviewers, stakeholders  
-> **Version:** 1
+> **Version:** 1.0.0
 
 ## Purpose
 
@@ -9,7 +9,7 @@ RAG-enterprise is a monorepo for a production-oriented **Retrieval-Augmented
 Generation** platform: curated knowledge bases, dense retrieval, grounded chat with
 citations (or abstention), offline evaluation, and an operator console.
 
-Version 1 focuses on a working knowledge → retrieve → generate → evaluate loop with
+Version 1.0.0 focuses on a working knowledge → retrieve → generate → evaluate loop with
 a public Persian **demo** corpus. Full multi-tenant auth, LangGraph agents, and
 production topology remain forward-looking.
 
@@ -22,14 +22,15 @@ production topology remain forward-looking.
 | Quality / AI engineers | Golden datasets and Feature 007 experiments |
 | Reviewers | Demo workspace + architecture summary |
 
-## What Version 1 includes
+## What Version 1.0.0 includes
 
 - Knowledge bases, documents, uploads, and versions (Feature 001)
 - Embeddings and dense retrieval (Features 004–005)
 - Grounded generation with citations / abstention (Feature 006)
 - Offline evaluation framework (Feature 007)
 - Operator console modules for Knowledge, Chat, and Evaluation (Feature 008)
-- Release-candidate ops: config validation, health probes, E2E golden path, demo corpus
+- Ops foundations: config validation, health probes, E2E golden path, demo corpus,
+  local file storage, Process & Index, and knowledge-base Publish
 
 Details: [Feature Map](FEATURE_MAP.md).
 

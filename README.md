@@ -1,10 +1,14 @@
 # RAG-enterprise
 
+![Version](https://img.shields.io/badge/version-1.0.0-0F766E)
+
 Production-grade **Retrieval-Augmented Generation** platform (monorepo).
 
-Version 1 delivers knowledge management, dense retrieval, grounded chat with
+**Version 1.0.0** delivers knowledge management, dense retrieval, grounded chat with
 citations, offline evaluation, an operator console, and a public Persian demo
 corpus. Durable decisions live in ADRs; detailed behavior lives in `specs/`.
+
+Release notes: [RELEASE_NOTES.md](RELEASE_NOTES.md) · Changelog: [CHANGELOG.md](CHANGELOG.md)
 
 ## Documentation (two clicks max)
 

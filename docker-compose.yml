@@ -1,11 +1,20 @@
 # RAG-enterprise local development infrastructure.
+# Platform release: 1.0.0
 # Production deployment is intentionally out of scope for this skeleton.
+
+x-rag-enterprise-labels: &rag-enterprise-labels
+  com.rag-enterprise.version: "1.0.0"
+  org.opencontainers.image.version: "1.0.0"
+  org.opencontainers.image.title: "RAG-enterprise"
 
 services:
   postgres:
     image: pgvector/pgvector:pg16
     container_name: rag-enterprise-postgres
     restart: unless-stopped
+    labels:
+      <<: *rag-enterprise-labels
+      com.rag-enterprise.service: postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-rag}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rag_dev_password}
@@ -25,6 +34,9 @@ services:
     image: redis:7-alpine
     container_name: rag-enterprise-redis
     restart: unless-stopped
+    labels:
+      <<: *rag-enterprise-labels
+      com.rag-enterprise.service: redis
     ports:
       - "${REDIS_PORT:-6379}:6379"
     volumes:

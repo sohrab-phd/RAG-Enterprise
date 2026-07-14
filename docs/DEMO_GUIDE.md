@@ -1,6 +1,7 @@
 # Demo Guide
 
-> **Purpose:** Entry point for the official Version 1 demonstration workspace.  
+> **Purpose:** Entry point for the official Version 1.0.0 demonstration workspace.  
+> **Release:** 1.0.0  
 > **Corpus authority:** [demo/README.md](../demo/README.md) (do not duplicate policies here).
 
 ## Purpose

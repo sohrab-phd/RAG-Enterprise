@@ -1,6 +1,10 @@
 # Infrastructure
 
+> **Release:** 1.0.0  
 > **Status:** Local Docker Compose supported; production deployment deferred.
+
+Compose services at the repository root carry OCI / project labels
+`com.rag-enterprise.version=1.0.0` (metadata only; no app images yet).
 
 ## Purpose
 
