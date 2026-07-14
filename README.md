@@ -10,6 +10,7 @@ This repository establishes the foundational skeleton for long-lived enterprise 
 RAG-enterprise/
 ├── backend/          # FastAPI application (Python, uv)
 ├── frontend/         # React + Vite + TypeScript
+├── demo/             # Official V1 Persian demo corpus (RC1.4)
 ├── infrastructure/   # IaC and deployment assets (future)
 ├── docs/             # Architecture and product documentation
 ├── specs/            # Feature specifications
@@ -69,6 +70,7 @@ See [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) for contribution guidelines.
 - [Tech Stack](docs/TECH_STACK.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Architecture Decisions](docs/DECISIONS.md)
+- [Official Demo Workspace (V1)](demo/README.md)
 
 ## License
 

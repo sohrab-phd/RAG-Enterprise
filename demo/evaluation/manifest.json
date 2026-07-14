@@ -1,0 +1,10 @@
+{
+  "dataset_id": "novinpardaz-demo-fa",
+  "dataset_version": "1.0.0",
+  "knowledge_base_id": "018f0000-0000-7000-8000-00000000kb01",
+  "question_count": 20,
+  "languages": ["fa"],
+  "language_default": "fa",
+  "created_at": "2026-07-14T00:00:00Z",
+  "notes": "RC1.4 official demo golden set for شرکت نوین‌پرداز. Replace knowledge_base_id and citation UUIDs with live indexed ids before scoring. Source passages are documented in each row notes field."
+}
