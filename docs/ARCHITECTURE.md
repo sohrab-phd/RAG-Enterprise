@@ -56,6 +56,9 @@ RC1.2 operational probes (no auth) under `/api/v1`:
 
 Details: [Operational Health](backend/OPERATIONAL_HEALTH.md).
 
+RC1.3 ships one automated golden-path E2E scenario for the Persian leave-policy
+pipeline: [End-to-End Happy Path](backend/E2E_HAPPY_PATH.md).
+
 <!-- TODO: Metrics and distributed tracing -->
 
 ## 9. Security Architecture

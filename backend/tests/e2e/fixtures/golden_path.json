@@ -1,0 +1,12 @@
+{
+  "dataset_id": "rc1-3-fa-leave-policy",
+  "dataset_version": "1.0.0",
+  "language": "fa",
+  "document_file": "company_leave_policy_fa.txt",
+  "document_title": "سیاست‌نامه منابع انسانی شرکت نوین‌پرداز",
+  "question": "مرخصی استحقاقی سالانه کارکنان رسمی چند روز کاری است؟",
+  "expected_answer_fa": "مرخصی استحقاقی سالانه کارکنان رسمی ۲۰ روز کاری است.",
+  "source_must_contain": "۲۰ روز کاری",
+  "answer_pattern_echo": "Based on the retrieved evidence, here is the answer\\. \\[1\\]",
+  "notes": "With LLM_BACKEND=echo the answer wording is deterministic English + [1]. The Persian expected_answer_fa is the grounded truth from the sample policy."
+}

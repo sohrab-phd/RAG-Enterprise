@@ -71,6 +71,9 @@ created before the API accepts traffic. See [CONFIGURATION.md](CONFIGURATION.md)
 
 All scoring is deterministic: chunk-id overlap and binary status checks only.
 
+RC1.3 reuses these metrics (and a one-question offline experiment) in the golden-path
+E2E scenario. See [End-to-End Happy Path](E2E_HAPPY_PATH.md).
+
 ## Usage
 
 ```python

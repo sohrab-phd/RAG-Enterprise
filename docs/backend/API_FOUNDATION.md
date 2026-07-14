@@ -149,4 +149,5 @@ API foundation tests live in `backend/tests/api/common/` and cover:
 - [Persistence Layer](PERSISTENCE_LAYER.md)
 - [Configuration Validation (RC1.1)](CONFIGURATION.md)
 - [Operational Health (RC1.2)](OPERATIONAL_HEALTH.md)
+- [End-to-End Happy Path (RC1.3)](E2E_HAPPY_PATH.md)
 - [Architecture Rules](../../.cursor/rules/architecture.md)

@@ -70,5 +70,6 @@ uv run pytest tests/api/v1/test_health.py -q
 ## Related documents
 
 - [Configuration Validation (RC1.1)](CONFIGURATION.md)
+- [End-to-End Happy Path (RC1.3)](E2E_HAPPY_PATH.md)
 - [API Foundation](API_FOUNDATION.md)
 - [Architecture](../ARCHITECTURE.md)

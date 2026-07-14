@@ -108,6 +108,9 @@ uv run mypy src
 uv run pytest
 ```
 
+The release-candidate golden path lives at `tests/e2e/test_rag_happy_path.py`
+(see [E2E Happy Path](backend/E2E_HAPPY_PATH.md)).
+
 Use `uv run ruff format .` to format backend files.
 
 Frontend:
