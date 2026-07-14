@@ -28,7 +28,7 @@ conversations, or AI provider settings.
 
 | Area | Description |
 | --- | --- |
-| Knowledge base administration | Create, read, update, archive, restore, and delete knowledge bases within a workspace |
+| Knowledge base administration | Create, read, update, publish, archive, restore, and delete knowledge bases within a workspace |
 | Folder hierarchy | Nested folders with move, rename, archive, and restore |
 | Document lifecycle | Register documents, upload files, create versions, update metadata, move, archive, restore, delete |
 | Upload orchestration | Single and bulk upload initiation, part upload, completion, and cancellation |

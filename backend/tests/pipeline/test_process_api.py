@@ -43,7 +43,6 @@ async def process_client(
         async with container.engine.begin() as connection:
             await connection.run_sync(ModelBase.metadata.create_all)
 
-        # Activate KB via archive/restore so later retrieval stays usable.
         transport = ASGITransport(app=app, raise_app_exceptions=False)
         async with AsyncClient(
             transport=transport,
@@ -67,8 +66,9 @@ async def test_process_and_index_document(process_client: AsyncClient) -> None:
     )
     assert kb.status_code == 201
     kb_id = kb.json()["data"]["id"]
-    await process_client.post(f"{base}/knowledge-bases/{kb_id}/archive")
-    await process_client.post(f"{base}/knowledge-bases/{kb_id}/restore")
+    published = await process_client.post(f"{base}/knowledge-bases/{kb_id}/publish")
+    assert published.status_code == 200
+    assert published.json()["data"]["status"] == "active"
 
     document = await process_client.post(
         f"{base}/knowledge-bases/{kb_id}/documents",

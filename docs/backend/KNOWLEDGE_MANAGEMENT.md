@@ -33,6 +33,22 @@ After upload, operators run synchronous
 [Process & Index](PROCESS_AND_INDEX.md)
 (`POST .../documents/{document_id}/process`).
 
+## Knowledge base lifecycle
+
+```text
+Draft → Publish → Active → Archive → Restore → Active
+```
+
+| Transition | Endpoint |
+| --- | --- |
+| Create (starts as `draft`) | `POST .../knowledge-bases` |
+| Publish (`draft` → `active`) | `POST .../knowledge-bases/{id}/publish` |
+| Archive | `POST .../knowledge-bases/{id}/archive` |
+| Restore (`archived` → `active`) | `POST .../knowledge-bases/{id}/restore` |
+
+Do **not** use archive → restore to activate a draft KB. Publishing does not change
+retrieval rules: search still requires an `active` knowledge base.
+
 ## API surface
 
 Base path: `/api/v1/workspaces/{workspace_id}/knowledge-bases/...`

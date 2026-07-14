@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as React from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { listKnowledgeBases } from "@/features/knowledge/api";
+import { listKnowledgeBases, publishKnowledgeBase } from "@/features/knowledge/api";
 import { CreateKnowledgeBaseDialog } from "@/features/knowledge/components/create-kb-dialog";
 import { EmptyState } from "@/features/knowledge/components/empty-state";
 import { ErrorState } from "@/features/knowledge/components/error-state";
@@ -21,15 +21,36 @@ import { StatusChip } from "@/features/knowledge/components/status-chip";
 import { formatRelativeTime } from "@/features/knowledge/lib/format";
 import { knowledgeKeys } from "@/features/knowledge/query-keys";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import { isApiError } from "@/lib/api/types";
 
 export function KnowledgeBaseList(): React.JSX.Element {
+  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const [createOpen, setCreateOpen] = React.useState(false);
+  const [publishError, setPublishError] = React.useState<string | null>(null);
+  const [publishingId, setPublishingId] = React.useState<string | null>(null);
   const page = Number(searchParams.get("page") ?? "1") || 1;
   const status = searchParams.get("status") ?? "all";
   const qParam = searchParams.get("q") ?? "";
   const [qInput, setQInput] = React.useState(qParam);
   const debouncedQ = useDebouncedValue(qInput, 300);
+
+  const publishMutation = useMutation({
+    mutationFn: publishKnowledgeBase,
+    onMutate: (knowledgeBaseId) => {
+      setPublishingId(knowledgeBaseId);
+      setPublishError(null);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: knowledgeKeys.bases() });
+    },
+    onError: (error) => {
+      setPublishError(isApiError(error) ? error.message : "Publish failed");
+    },
+    onSettled: () => {
+      setPublishingId(null);
+    },
+  });
 
   React.useEffect(() => {
     const next = new URLSearchParams(searchParams);
@@ -108,6 +129,11 @@ export function KnowledgeBaseList(): React.JSX.Element {
       {query.isError ? (
         <ErrorState error={query.error} onRetry={() => void query.refetch()} />
       ) : null}
+      {publishError ? (
+        <p className="mb-3 text-sm text-destructive" role="alert">
+          {publishError}
+        </p>
+      ) : null}
 
       {!isInitialLoading && !query.isError && items.length === 0 ? (
         <EmptyState
@@ -128,6 +154,7 @@ export function KnowledgeBaseList(): React.JSX.Element {
                 <th className="px-4 py-3 font-medium">Docs</th>
                 <th className="px-4 py-3 font-medium">Language</th>
                 <th className="px-4 py-3 font-medium">Updated</th>
+                <th className="px-4 py-3 font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -150,6 +177,19 @@ export function KnowledgeBaseList(): React.JSX.Element {
                   <td className="px-4 py-3 text-muted-foreground">{kb.default_language}</td>
                   <td className="px-4 py-3 text-muted-foreground">
                     {formatRelativeTime(kb.updated_at)}
+                  </td>
+                  <td className="px-4 py-3">
+                    {kb.status === "draft" ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={publishingId === kb.id}
+                        onClick={() => publishMutation.mutate(kb.id)}
+                      >
+                        {publishingId === kb.id ? "Publishing…" : "Publish"}
+                      </Button>
+                    ) : null}
                   </td>
                 </tr>
               ))}

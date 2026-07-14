@@ -34,6 +34,7 @@ Full catalog: [specs/README.md](../specs/README.md).
 | RC1.5 | Documentation polish | [Documentation index](README.md) |
 | RC1.6 | Local filesystem upload storage | [LOCAL_FILE_STORAGE.md](backend/LOCAL_FILE_STORAGE.md) |
 | RC1.6 | Synchronous process & index action | [PROCESS_AND_INDEX.md](backend/PROCESS_AND_INDEX.md) |
+| RC1.6 | Explicit knowledge-base publish | [KNOWLEDGE_MANAGEMENT.md](backend/KNOWLEDGE_MANAGEMENT.md) |
 
 ## Shared foundations
 

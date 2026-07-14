@@ -121,6 +121,20 @@ Path parameters:
 
 ---
 
+### Publish knowledge base
+
+`POST /workspaces/{workspace_id}/knowledge-bases/{knowledge_base_id}/publish`
+
+**Permission:** `knowledge_base:manage`
+
+**Precondition:** KB in `draft` (publishing an already `active` KB is idempotent).
+
+**Effect:** KB → `active`. Empty knowledge bases are allowed.
+
+**Response:** Updated knowledge base detail.
+
+---
+
 ### Archive knowledge base
 
 `POST /workspaces/{workspace_id}/knowledge-bases/{knowledge_base_id}/archive`
@@ -563,17 +577,7 @@ Path parameters:
 
 ## Status changes
 
-Dedicated endpoints above cover archive, restore, and delete. Additional status transition:
-
-### Publish knowledge base
-
-`POST /workspaces/{workspace_id}/knowledge-bases/{knowledge_base_id}/publish`
-
-**Permission:** `knowledge_base:manage`
-
-**Precondition:** KB in `draft`; at least zero documents (empty KB allowed).
-
-**Effect:** KB → `active`.
+Dedicated endpoints above cover publish, archive, restore, and delete.
 
 ---
 

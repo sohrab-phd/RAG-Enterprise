@@ -114,6 +114,33 @@ class UpdateKnowledgeBaseHandler:
             return Result.ok(to_kb_detail(kb))
 
 
+class PublishKnowledgeBaseHandler:
+    def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
+        self._session_factory = session_factory
+
+    async def handle(
+        self, command: cmd.PublishKnowledgeBaseCommand
+    ) -> Result[KnowledgeBaseDetailDTO]:
+        auth = require_permission(command.actor, "knowledge_base:manage")
+        if auth.is_failure:
+            return Result.fail(auth.error)  # type: ignore[arg-type]
+        scope = _scope(command)
+        async with KnowledgeUnitOfWork(self._session_factory) as uow:
+            kb = await uow.knowledge_bases.get_scoped(scope, command.knowledge_base_id)
+            if kb is None:
+                return Result.fail(not_found("Knowledge base").error)  # type: ignore[arg-type]
+            if kb.status == KnowledgeBaseStatus.ACTIVE:
+                return Result.ok(to_kb_detail(kb))
+            if kb.status != KnowledgeBaseStatus.DRAFT:
+                return Result.fail(conflict("Knowledge base is not draft").error)  # type: ignore[arg-type]
+            await uow.knowledge_bases.publish(
+                kb,
+                updated_by_user_id=command.actor.user_id,
+            )
+            await uow.commit()
+            return Result.ok(to_kb_detail(kb))
+
+
 class ArchiveKnowledgeBaseHandler:
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
         self._session_factory = session_factory

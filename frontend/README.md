@@ -17,7 +17,7 @@ evaluation runs against the FastAPI backend.
 ## Implemented
 
 - App shell (header, sidebar, layout, theme, routing)
-- Knowledge module against real `/api/v1` endpoints (including **Process & Index**)
+- Knowledge module against real `/api/v1` endpoints (including **Publish** and **Process & Index**)
 - Chat module (`POST .../chat`) with citations and evidence/pipeline panels
 - Evaluation dashboard (Feature 007 read adapters + trend charts)
 

@@ -138,6 +138,26 @@ async def update_knowledge_base(
 
 
 @router.post(
+    "/knowledge-bases/{knowledge_base_id}/publish",
+    response_model=SuccessEnvelope[KnowledgeBaseDetailDTO],
+)
+async def publish_knowledge_base(
+    workspace_id: uuid.UUID,
+    knowledge_base_id: uuid.UUID,
+    actor: ActorDep,
+    dispatcher: CommandDispatcherDep,
+) -> SuccessEnvelope[KnowledgeBaseDetailDTO]:
+    result = await dispatcher.dispatch(
+        cmd.PublishKnowledgeBaseCommand(
+            actor=actor,
+            workspace_id=workspace_id,
+            knowledge_base_id=knowledge_base_id,
+        )
+    )
+    return success_response(raise_for_result(result))
+
+
+@router.post(
     "/knowledge-bases/{knowledge_base_id}/archive",
     response_model=SuccessEnvelope[KnowledgeBaseDetailDTO],
 )

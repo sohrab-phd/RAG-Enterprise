@@ -41,6 +41,32 @@ async def test_create_and_get_knowledge_base(
 
 
 @pytest.mark.asyncio
+async def test_publish_knowledge_base(
+    knowledge_client: AsyncClient,
+    workspace_id: uuid.UUID,
+) -> None:
+    create = await knowledge_client.post(
+        f"/api/v1/workspaces/{workspace_id}/knowledge-bases",
+        json={"name": "Publish Me", "default_language": "en"},
+    )
+    assert create.status_code == 201
+    assert create.json()["data"]["status"] == "draft"
+    kb_id = create.json()["data"]["id"]
+
+    published = await knowledge_client.post(
+        f"/api/v1/workspaces/{workspace_id}/knowledge-bases/{kb_id}/publish"
+    )
+    assert published.status_code == 200
+    assert published.json()["data"]["status"] == "active"
+
+    again = await knowledge_client.post(
+        f"/api/v1/workspaces/{workspace_id}/knowledge-bases/{kb_id}/publish"
+    )
+    assert again.status_code == 200
+    assert again.json()["data"]["status"] == "active"
+
+
+@pytest.mark.asyncio
 async def test_duplicate_knowledge_base_name_returns_conflict(
     knowledge_client: AsyncClient,
     workspace_id: uuid.UUID,

@@ -94,14 +94,19 @@ stateDiagram-v2
     active --> reindexing: model_or_policy_change
     reindexing --> active: reindex_complete
     active --> archived: admin_archive
+    archived --> active: admin_restore
     archived --> deleted: retention_elapsed
     deleted --> [*]
 ```
 
+**Operator lifecycle (RC1.6):** `draft` → **Publish** → `active` → **Archive** → `archived` → **Restore** → `active`.
+
 **Transition notes:**
 
+- `POST .../knowledge-bases/{id}/publish` is the only draft → active transition (empty KB allowed).
 - Entering `reindexing` does not delete existing chunks; new embeddings may be built in parallel.
 - Conversations may continue during `reindexing` using the last active retrieval configuration unless policy blocks it.
+- Retrieval behavior is unchanged: only `active` knowledge bases are searchable.
 
 ---
 

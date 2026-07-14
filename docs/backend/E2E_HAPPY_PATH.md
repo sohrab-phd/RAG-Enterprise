@@ -8,7 +8,8 @@
 
 ```text
 Start application
-  → Create Knowledge Base (activate via archive → restore)
+  → Create Knowledge Base
+  → Publish Knowledge Base (draft → active)
   → Upload Persian sample document
   → Document processing (DocumentProcessingService)
   → Chunk generation
@@ -68,8 +69,7 @@ See [PROCESS_AND_INDEX.md](PROCESS_AND_INDEX.md). The golden-path test uses that
 endpoint after upload.
 
 Knowledge bases are created as `draft`; retrieval requires `active`. The golden path
-activates an empty KB via `POST .../archive` then `POST .../restore` before uploads
-(no new publish endpoint).
+publishes via `POST .../knowledge-bases/{id}/publish` before uploads.
 
 ## Run
 

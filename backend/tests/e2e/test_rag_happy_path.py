@@ -96,7 +96,7 @@ async def test_rag_happy_path_persian_leave_policy(e2e_client: AsyncClient) -> N
     assert container.indexing_service is not None
     assert container.evaluation_service is not None
 
-    # --- Start: create + activate knowledge base (draft → archive → restore = active) ---
+    # --- Start: create + publish knowledge base (draft → active) ---
     created = await e2e_client.post(
         f"{base}/knowledge-bases",
         json={
@@ -108,11 +108,9 @@ async def test_rag_happy_path_persian_leave_policy(e2e_client: AsyncClient) -> N
     assert created.status_code == 201
     kb_id = str(_data(created)["id"])
 
-    archived = await e2e_client.post(f"{base}/knowledge-bases/{kb_id}/archive")
-    assert archived.status_code == 200
-    restored = await e2e_client.post(f"{base}/knowledge-bases/{kb_id}/restore")
-    assert restored.status_code == 200
-    assert _data(restored)["status"] == "active"
+    published = await e2e_client.post(f"{base}/knowledge-bases/{kb_id}/publish")
+    assert published.status_code == 200
+    assert _data(published)["status"] == "active"
 
     # --- Upload Persian sample document ---
     document = await e2e_client.post(

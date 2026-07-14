@@ -53,6 +53,12 @@ export function createKnowledgeBase(input: CreateKnowledgeBaseInput): Promise<Kn
   });
 }
 
+export function publishKnowledgeBase(knowledgeBaseId: string): Promise<KnowledgeBaseDetail> {
+  return apiRequest(workspacePath(`/knowledge-bases/${knowledgeBaseId}/publish`), {
+    method: "POST",
+  });
+}
+
 export function getTree(
   knowledgeBaseId: string,
   params: { readonly depth?: number; readonly signal?: AbortSignal } = {},

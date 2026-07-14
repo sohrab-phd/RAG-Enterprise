@@ -30,6 +30,10 @@ def register_knowledge_handlers(
         ch.UpdateKnowledgeBaseHandler(session_factory),
     )
     command_dispatcher.register(
+        cmd.PublishKnowledgeBaseCommand,
+        ch.PublishKnowledgeBaseHandler(session_factory),
+    )
+    command_dispatcher.register(
         cmd.ArchiveKnowledgeBaseCommand,
         ch.ArchiveKnowledgeBaseHandler(session_factory),
     )

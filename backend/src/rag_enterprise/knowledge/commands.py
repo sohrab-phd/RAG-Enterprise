@@ -57,6 +57,10 @@ class UpdateKnowledgeBaseCommand(_ScopedCommand):
         return Result.ok(None)
 
 
+class PublishKnowledgeBaseCommand(_ScopedCommand):
+    knowledge_base_id: uuid.UUID
+
+
 class ArchiveKnowledgeBaseCommand(_ScopedCommand):
     knowledge_base_id: uuid.UUID
 

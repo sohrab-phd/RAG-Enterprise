@@ -79,6 +79,17 @@ class KnowledgeBaseRepository(SQLAlchemyRepository[KnowledgeBase]):
         result = await self._session.scalar(statement)
         return int(result or 0)
 
+    async def publish(
+        self,
+        entity: KnowledgeBase,
+        *,
+        updated_by_user_id: uuid.UUID,
+    ) -> None:
+        """Mark a knowledge base ``active`` (draft → published)."""
+        entity.status = KnowledgeBaseStatus.ACTIVE
+        entity.updated_by_user_id = updated_by_user_id
+        entity.row_version += 1
+
     async def name_exists(
         self,
         scope: TenantScope,
