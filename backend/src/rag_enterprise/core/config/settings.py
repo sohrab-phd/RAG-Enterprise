@@ -85,6 +85,12 @@ class Settings(BaseSettings):
         validation_alias="GENERATION_MAX_HISTORY_MESSAGES",
     )
 
+    # Offline evaluation artifacts (Feature 007 filesystem root)
+    evaluation_storage_root: str = Field(
+        default="eval-artifacts",
+        validation_alias="EVALUATION_STORAGE_ROOT",
+    )
+
     @model_validator(mode="before")
     @classmethod
     def assemble_database_settings(cls, data: Any) -> Any:

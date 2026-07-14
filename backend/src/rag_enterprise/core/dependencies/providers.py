@@ -18,6 +18,7 @@ from rag_enterprise.application.interfaces.llm import LLMProvider
 from rag_enterprise.application.queries.dispatcher import QueryDispatcher
 from rag_enterprise.core.config.settings import Settings, get_settings
 from rag_enterprise.db.session.factory import create_engine_and_session_factory
+from rag_enterprise.evaluation.service import EvaluationService
 from rag_enterprise.generation.prompt_builder import PromptBuilder, PromptBuilderConfig
 from rag_enterprise.generation.providers import OpenAICompatibleLLMProvider
 from rag_enterprise.generation.service import GenerationService
@@ -41,6 +42,7 @@ class AppContainer:
     indexing_service: IndexingService | None = None
     retrieval_service: RetrievalService | None = None
     generation_service: GenerationService | None = None
+    evaluation_service: EvaluationService | None = None
     command_dispatcher: CommandDispatcher = field(default_factory=CommandDispatcher)
     query_dispatcher: QueryDispatcher = field(default_factory=QueryDispatcher)
     _initialized: bool = field(default=False, repr=False)
@@ -98,6 +100,11 @@ class AppContainer:
                 llm_timeout_seconds=self.settings.llm_timeout_seconds,
                 retry_delays_seconds=(0.0, 0.0),
             )
+            self.evaluation_service = EvaluationService(
+                retrieval_service=self.retrieval_service,
+                generation_service=self.generation_service,
+                storage_root=self.settings.evaluation_storage_root,
+            )
         self._initialized = True
 
     async def shutdown(self) -> None:
@@ -115,6 +122,7 @@ class AppContainer:
             self.indexing_service = None
             self.retrieval_service = None
             self.generation_service = None
+            self.evaluation_service = None
 
         self._initialized = False
 

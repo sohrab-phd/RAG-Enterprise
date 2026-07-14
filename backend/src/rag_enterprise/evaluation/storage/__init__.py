@@ -100,3 +100,16 @@ class ExperimentStorage:
     def read_summary(self, experiment_id: str) -> EvaluationSummary:
         path = self.experiment_dir(experiment_id) / "summary.json"
         return EvaluationSummary.model_validate(json.loads(path.read_text(encoding="utf-8")))
+
+    def list_experiment_ids(self) -> list[str]:
+        """Return experiment directory names under the storage root."""
+        root = self._root / "experiments"
+        if not root.exists():
+            return []
+        return sorted(
+            (path.name for path in root.iterdir() if path.is_dir()),
+            reverse=True,
+        )
+
+    def exists(self, experiment_id: str) -> bool:
+        return self.experiment_dir(experiment_id).is_dir()

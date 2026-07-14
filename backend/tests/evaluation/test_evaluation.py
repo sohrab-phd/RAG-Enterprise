@@ -440,3 +440,34 @@ def test_citation_ref_model() -> None:
     assert ref.chunk_id == CHUNK_A
     assert Difficulty.EASY.value == "easy"
     assert QuestionLanguage.FA.value == "fa"
+
+
+@pytest.mark.asyncio
+async def test_list_runs_read_adapter(tmp_path: Path) -> None:
+    dataset_dir = _write_dataset(tmp_path / "dataset", questions=[_answerable(), _abstain()])
+    retrieval = FakeRetrieval(default_chunks=[_chunk(CHUNK_A)])
+    q = "مرخصی سالانه چند روز است؟"
+    generation = FakeGeneration(
+        results={
+            q: _completed(CHUNK_A),
+            "قیمت سهام شرکت چقدر است؟": _abstained(),
+        }
+    )
+    service = EvaluationService(
+        retrieval_service=retrieval,
+        generation_service=generation,
+        storage_root=tmp_path / "out",
+    )
+    config = _config(dataset_dir, experiment_id="run-list-1")
+    await service.run(config)
+
+    items = service.list_runs(workspace_id=config.workspace_id)
+    assert len(items) == 1
+    assert items[0]["run_id"] == "run-list-1"
+    assert items[0]["dataset_id"] == "kb-hr-fa-smoke"
+    assert items[0]["recall_at_k"] is not None
+
+    detail = service.get_run(workspace_id=config.workspace_id, run_id="run-list-1")
+    assert detail["run_id"] == "run-list-1"
+    assert "metrics" in detail
+    assert service.list_dataset_ids(workspace_id=config.workspace_id) == ["kb-hr-fa-smoke"]

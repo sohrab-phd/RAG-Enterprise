@@ -66,22 +66,22 @@ Archive / restore / delete / move endpoints exist and map to contextual menus (n
 
 ## Evaluation & Experiments
 
-Feature 007 provides `EvaluationService` + filesystem artifacts. **No HTTP API yet.**
+Feature 007 provides `EvaluationService` + filesystem artifacts. Sprint 3 ships **thin read adapters**:
 
-| Screen | UI action | Planned thin adapter | Existing backend source |
+| Screen | UI action | Adapter | Existing backend source |
 | --- | --- | --- | --- |
-| E1 / X1 | List runs | `GET /workspaces/{id}/evaluations/runs` | `experiments/*/summary.json` + `config.json` |
+| E1 / X1 | List runs | `GET /workspaces/{id}/evaluations/runs` | `experiments/*/summary.json` + `config.json` + `metrics.json` |
+| E2 | Run detail | `GET .../evaluations/runs/{run_id}` | config + summary + metrics |
 | E1 / X3 | Get metrics | `GET .../evaluations/runs/{run_id}/metrics` | `metrics.json` |
-| X3 | Get config | `GET .../evaluations/runs/{run_id}/config` | `config.json` |
-| X3 | Get results | `GET .../evaluations/runs/{run_id}/results` | `results.jsonl` |
-| X2 | Start run | `POST .../evaluations/runs` | `EvaluationService.run` |
-| E1 | List datasets (optional) | `GET .../evaluations/datasets` | Dataset directories on disk |
+| E1 | List datasets | `GET .../evaluations/datasets` | Distinct dataset ids from stored runs |
+| X2 | Start run | `POST .../evaluations/runs` | Planned — not in Sprint 3 |
+| X3 | Get config / results | Planned thin GET adapters | `config.json` / `results.jsonl` |
 
 ### Adapter constraints (non-negotiable)
 
 1. Adapters are thin HTTP façades over Feature 007 — **no new metrics**, no optimizer.
 2. Persistence remains filesystem (or future DB metadata only as already planned in 007).
-3. Until adapters ship, Evaluation/Experiments UI shows honest empty + “API pending.”
+3. UI must never invent fake metric values when artifacts are missing.
 
 ### Metrics field map
 

@@ -12,6 +12,7 @@ function toneForStatus(status: string): BadgeProps["variant"] {
     case "active":
     case "indexed":
     case "completed":
+    case "passed":
     case "extracted":
     case "chunked":
       return "success";
@@ -29,6 +30,7 @@ function toneForStatus(status: string): BadgeProps["variant"] {
     case "failed":
     case "deleted":
       return "danger";
+    case "abstained":
     case "archived":
     case "superseded":
     case "expired":
