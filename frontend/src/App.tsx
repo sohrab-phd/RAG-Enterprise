@@ -1,23 +1,31 @@
-import { Button } from "@/components/ui/button";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import * as React from "react";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
-function App() {
+import { ErrorBoundary } from "@/components/error-boundary";
+import { ThemeProvider } from "@/components/theme/theme-provider";
+import { appRoutes } from "@/routes";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
+const router = createBrowserRouter(appRoutes);
+
+export default function App(): React.JSX.Element {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-8">
-      <div className="max-w-lg space-y-3 text-center">
-        <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-          RAG-enterprise
-        </p>
-        <h1 className="text-3xl font-semibold tracking-tight">
-          Frontend skeleton ready
-        </h1>
-        <p className="text-muted-foreground">
-          React, Vite, TypeScript, Tailwind CSS, and shadcn/ui are configured.
-          Business features will be implemented in future iterations.
-        </p>
-      </div>
-      <Button type="button">Placeholder action</Button>
-    </main>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+        </QueryClientProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
-
-export default App;

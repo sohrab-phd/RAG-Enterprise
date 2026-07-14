@@ -20,10 +20,7 @@ export default defineConfig([
       ecmaVersion: 2023,
     },
     rules: {
-      "react-refresh/only-export-components": [
-        "warn",
-        { allowConstantExport: true },
-      ],
+      "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
     },
   },
 ]);
