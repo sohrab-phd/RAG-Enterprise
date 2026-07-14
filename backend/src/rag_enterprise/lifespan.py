@@ -13,6 +13,7 @@ from rag_enterprise.core.config.validation import (
 )
 from rag_enterprise.core.dependencies.providers import lifespan_container
 from rag_enterprise.core.logging.setup import configure_logging, get_logger
+from rag_enterprise.core.runtime import mark_configuration_validated, reset_process_runtime
 
 logger = get_logger(__name__)
 
@@ -21,6 +22,7 @@ logger = get_logger(__name__)
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     """Manage application startup and shutdown lifecycle."""
     settings = get_settings()
+    reset_process_runtime()
 
     try:
         validate_configuration(settings)
@@ -29,6 +31,8 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         # so operators see grouped errors even if structured logging is quiet.
         emit_configuration_report(str(exc))
         raise SystemExit(1) from exc
+
+    mark_configuration_validated()
 
     configure_logging(
         log_level=settings.log_level,
@@ -50,8 +54,10 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         environment=settings.app_env,
     )
 
-    async with lifespan_container(settings):
-        logger.info("application_ready")
-        yield
-
-    logger.info("application_shutdown_complete")
+    try:
+        async with lifespan_container(settings):
+            logger.info("application_ready")
+            yield
+    finally:
+        reset_process_runtime()
+        logger.info("application_shutdown_complete")

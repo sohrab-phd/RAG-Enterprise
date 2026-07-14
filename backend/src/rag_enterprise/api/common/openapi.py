@@ -14,7 +14,10 @@ from rag_enterprise.core.config.settings import Settings
 OPENAPI_TAGS: list[dict[str, str]] = [
     {
         "name": "health",
-        "description": "Service health and readiness probes.",
+        "description": (
+            "Operational probes: /live (liveness), /ready (readiness dependencies), "
+            "/system (inventory counts), and legacy /health."
+        ),
     },
     {
         "name": "knowledge-bases",

@@ -1,0 +1,74 @@
+# Operational Health (RC1.2)
+
+> **Status:** Implemented  
+> **Scope:** Liveness, readiness, and system inventory probes — no auth, no frontend,
+> no LLM/embedding provider calls.
+
+## Endpoints
+
+All routes are unauthenticated and live under `/api/v1`.
+
+| Path | Purpose | Dependencies |
+| --- | --- | --- |
+| `GET /live` | Process liveness | None (immediate) |
+| `GET /ready` | Traffic readiness | DI, config flag, DB `SELECT 1`, evaluation dir, upload storage probe |
+| `GET /system` | Operator inventory | Settings + optional DB/eval counts |
+| `GET /health` | Legacy compatibility | Settings only |
+
+### `/live`
+
+Always `200`:
+
+```json
+{ "status": "live", "timestamp": "…" }
+```
+
+### `/ready`
+
+`200` when every check passes; `503` when any fail.
+
+Checks (bounded to ~2s each):
+
+| Check | Pass criteria |
+| --- | --- |
+| `configuration` | RC1.1 validation marked complete in lifespan |
+| `dependency_injection` | `AppContainer.is_initialized` |
+| `database` | `SELECT 1` via SQLAlchemy engine |
+| `evaluation_storage` | `EVALUATION_STORAGE_ROOT` is a writable directory |
+| `upload_storage` | file storage `put` → `get` → `delete` probe |
+
+Does **not** call LLM or embedding providers.
+
+### `/system`
+
+Returns configured inventory (never invokes models):
+
+- `version`, `environment`
+- provider names + modes (`openai_compatible` / `bge_m3` with `echo|http` / `deterministic|flag`)
+- configured model keys + embedding dimensions + prompt template version `v1`
+- counts: documents, chunks, embeddings, evaluation runs
+- `configuration_validated`, `dependency_injection_initialized`
+
+`503` when DI is not initialized (counts may be zero / `ok: false`).
+
+## Implementation
+
+```text
+rag_enterprise.core.runtime      # configuration_validated flag
+rag_enterprise.core.health       # readiness + system inventory helpers
+rag_enterprise.api.v1.endpoints.health
+rag_enterprise.lifespan          # marks config validated after RC1.1
+```
+
+## Testing
+
+```bash
+cd backend
+uv run pytest tests/api/v1/test_health.py -q
+```
+
+## Related documents
+
+- [Configuration Validation (RC1.1)](CONFIGURATION.md)
+- [API Foundation](API_FOUNDATION.md)
+- [Architecture](../ARCHITECTURE.md)

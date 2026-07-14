@@ -26,8 +26,9 @@ by `rag_enterprise.lifespan.lifespan`:
 4. Initialize `AppContainer` (DB engine, providers, domain services).
 5. Serve requests; dispose resources on shutdown.
 
-See [CONFIGURATION.md](backend/CONFIGURATION.md) and
-[API Foundation](backend/API_FOUNDATION.md).
+See [CONFIGURATION.md](backend/CONFIGURATION.md),
+[API Foundation](backend/API_FOUNDATION.md), and
+[Operational Health](backend/OPERATIONAL_HEALTH.md).
 
 ## 5. Frontend Architecture
 
@@ -43,7 +44,19 @@ See [CONFIGURATION.md](backend/CONFIGURATION.md) and
 
 ## 8. Observability
 
-<!-- TODO: Logging, metrics, tracing, health checks -->
+Structured logging is configured at startup (`rag_enterprise.core.logging`).
+RC1.2 operational probes (no auth) under `/api/v1`:
+
+| Path | Role |
+| --- | --- |
+| `GET /live` | Process liveness — no dependency checks |
+| `GET /ready` | Readiness — config flag, DI, DB, evaluation + upload storage |
+| `GET /system` | Inventory — version, env, provider/model names, entity counts |
+| `GET /health` | Legacy compatibility |
+
+Details: [Operational Health](backend/OPERATIONAL_HEALTH.md).
+
+<!-- TODO: Metrics and distributed tracing -->
 
 ## 9. Security Architecture
 

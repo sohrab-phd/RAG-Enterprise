@@ -74,8 +74,9 @@ uv sync
 uv run uvicorn rag_enterprise.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Verify `http://localhost:8000/api/v1/health`. Development OpenAPI documentation is
-available at `http://localhost:8000/docs`.
+Verify liveness at `http://localhost:8000/api/v1/live` and readiness at
+`http://localhost:8000/api/v1/ready` (legacy `.../health` still works). Development
+OpenAPI documentation is available at `http://localhost:8000/docs`.
 
 When dependencies change, use `uv add <package>` or `uv remove <package>` from
 `backend/` and commit both `pyproject.toml` and `uv.lock`.

@@ -82,6 +82,7 @@ uv run pytest tests/core/test_config_validation.py -q
 
 ## Related documents
 
+- [Operational Health (RC1.2)](OPERATIONAL_HEALTH.md) — readiness uses the config-validated flag
 - [Persistence Layer](PERSISTENCE_LAYER.md) — database settings
 - [RAG Generation](RAG_GENERATION.md) — LLM settings
 - [Embeddings & Retrieval](EMBEDDINGS_AND_RETRIEVAL.md) — embedding backends

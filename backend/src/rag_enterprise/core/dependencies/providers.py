@@ -47,6 +47,10 @@ class AppContainer:
     query_dispatcher: QueryDispatcher = field(default_factory=QueryDispatcher)
     _initialized: bool = field(default=False, repr=False)
 
+    @property
+    def is_initialized(self) -> bool:
+        return self._initialized
+
     async def initialize(self) -> None:
         """Initialize external resources during application startup."""
         if self._initialized:
