@@ -140,15 +140,15 @@ GENERATION_MIN_EVIDENCE_SCORE=0.0
 LLM_BACKEND=local
 LOCAL_PROVIDER=ollama
 OLLAMA_BASE_URL=http://localhost:11434
-LLM_MODEL_KEY=auto
-LLM_TIMEOUT_SECONDS=120
+LLM_MODEL_KEY=qwen2.5:7b
+LLM_TIMEOUT_SECONDS=180
 EMBEDDING_BACKEND=sentence_transformers
 EMBEDDING_MODEL_KEY=BAAI/bge-m3
 EMBEDDING_DIMENSIONS=1024
 GENERATION_MIN_EVIDENCE_SCORE=0.25
 ```
 
-Install Ollama, pull a model (`ollama pull <model>`), then restart the backend.
+Install Ollama, pull the model (`ollama pull qwen2.5:7b`), then restart the backend.
 Details: [OLLAMA.md](backend/OLLAMA.md).
 
 Without lowering the evidence score, Chat may abstain more often under deterministic

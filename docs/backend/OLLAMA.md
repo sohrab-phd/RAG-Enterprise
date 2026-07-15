@@ -32,7 +32,7 @@ curl http://localhost:11434/api/tags
 3. Pull at least one chat model (example — replace with any model you prefer):
 
 ```bash
-ollama pull gemma4:e4b-it-qat
+ollama pull qwen2.5:7b
 ```
 
 Never hardcode model names in application code. Discovery always uses `GET /api/tags`.
@@ -45,23 +45,23 @@ Never hardcode model names in application code. Discovery always uses `GET /api/
 | `LOCAL_PROVIDER` | `ollama` | Only `ollama` in V1 |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | No hardcoded URL outside settings |
 | `LLM_MODEL_KEY` | `auto` | Explicit name, `auto`, or empty (= `auto`) |
-| `LLM_TIMEOUT_SECONDS` | `60` | Shared completion timeout |
+| `LLM_TIMEOUT_SECONDS` | `180` (dev) | Shared completion timeout; raise for larger local models |
 
-Example `backend/.env` snippet:
+Example `backend/.env` snippet (development):
 
 ```bash
 LLM_BACKEND=local
 LOCAL_PROVIDER=ollama
 OLLAMA_BASE_URL=http://localhost:11434
-LLM_MODEL_KEY=auto
-LLM_TIMEOUT_SECONDS=120
+LLM_MODEL_KEY=qwen2.5:7b
+LLM_TIMEOUT_SECONDS=180
 ```
 
 ## Model selection
 
 | `LLM_MODEL_KEY` | Behavior |
 |-----------------|----------|
-| Explicit name (e.g. `gemma4:e4b-it-qat`) | Must exist in `/api/tags`; otherwise **startup fails** with requested + installed list and fix steps |
+| Explicit name (e.g. `qwen2.5:7b`) | Must exist in `/api/tags`; otherwise **startup fails** with requested + installed list and fix steps |
 | `auto` or empty | If one model → select it. If multiple → select first alphabetically and emit a **startup warning** (does not fail). If none → **startup fails** |
 
 To change models deterministically:
@@ -113,13 +113,13 @@ Base URL
 http://localhost:11434
 
 Installed Models
-4
+1
 
 Selected Model
-gemma4:e4b-it-qat
+qwen2.5:7b
 
 Selection Mode
-auto
+explicit
 --------------------------------------------
 ```
 

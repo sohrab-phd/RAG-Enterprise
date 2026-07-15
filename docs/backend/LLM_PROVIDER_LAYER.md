@@ -58,12 +58,12 @@ models, selected model, generation ping, `response_time_ms`).
 "llm": {
   "backend": "local",
   "provider": "ollama",
-  "model": "gemma4:e4b-it-qat",
-  "selected_model": "gemma4:e4b-it-qat",
-  "installed_models": ["gemma4:e4b-it-qat"],
-  "timeout_seconds": 60.0,
+  "model": "qwen2.5:7b",
+  "selected_model": "qwen2.5:7b",
+  "installed_models": ["qwen2.5:7b"],
+  "timeout_seconds": 180.0,
   "ollama_version": "0.9.0",
-  "selection_mode": "auto",
+  "selection_mode": "explicit",
   "reachability": "reachable"
 }
 ```
