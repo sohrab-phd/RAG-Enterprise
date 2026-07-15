@@ -12,11 +12,12 @@ from typing import Any
 from tools.persian_rag_benchmark.bootstrap import production_container
 from tools.persian_rag_benchmark.config import BenchmarkConfig
 from tools.persian_rag_benchmark.corpus import load_kb_chunks
+from tools.persian_rag_benchmark.curated_gold import load_curated_dataset
 from tools.persian_rag_benchmark.diagnostics.chunks import diagnose_chunks
 from tools.persian_rag_benchmark.diagnostics.embeddings import diagnose_embeddings
-from tools.persian_rag_benchmark.diagnostics.generation import evaluate_generation
+from tools.persian_rag_benchmark.diagnostics.generation import evaluate_generation_by_cohort
 from tools.persian_rag_benchmark.diagnostics.language import evaluate_language
-from tools.persian_rag_benchmark.diagnostics.retrieval import evaluate_retrieval
+from tools.persian_rag_benchmark.diagnostics.retrieval import evaluate_retrieval_by_cohort
 from tools.persian_rag_benchmark.diagnostics.root_cause import assign_root_causes
 from tools.persian_rag_benchmark.ground_truth import generate_ground_truth
 from tools.persian_rag_benchmark.models import GroundTruthQuestion, QuestionRunResult
@@ -37,6 +38,8 @@ async def run_benchmark(config: BenchmarkConfig) -> dict[str, Any]:
     run_dir = output_dir / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
 
+    notes: list[str] = []
+
     async with production_container() as container:
         assert container.session_factory is not None
         chunks = await load_kb_chunks(
@@ -52,13 +55,7 @@ async def run_benchmark(config: BenchmarkConfig) -> dict[str, Any]:
                 "Process & Index Persian documents before running the benchmark."
             )
 
-        base_questions = generate_ground_truth(
-            chunks,
-            knowledge_base_id=str(config.knowledge_base_id),
-            questions_per_document_min=config.questions_per_document_min,
-            questions_per_document_max=config.questions_per_document_max,
-            seed=config.seed,
-        )
+        base_questions = _build_base_questions(config, chunks, notes)
         questions = expand_robustness_variants(
             base_questions,
             max_variants_per_question=config.max_robustness_variants_per_question,
@@ -74,14 +71,20 @@ async def run_benchmark(config: BenchmarkConfig) -> dict[str, Any]:
                 "base_question_count": len(base_questions),
                 "chunk_count": len(chunks),
                 "dataset_only": True,
+                "notes": notes,
             }
 
         results = await run_pipeline_for_questions(container, questions, config=config)
         results = assign_root_causes(results)
 
-        retrieval_health = evaluate_retrieval(results, top_k=config.top_k)
-        generation_health = (
-            evaluate_generation(results) if config.include_generation else {"n": 0, "skipped": True}
+        retrieval_by_cohort = evaluate_retrieval_by_cohort(results, top_k=config.top_k)
+        generation_by_cohort = (
+            evaluate_generation_by_cohort(results)
+            if config.include_generation
+            else {
+                "baseline": {"n": 0, "skipped": True},
+                "robustness": {"n": 0, "skipped": True},
+            }
         )
         language_health = evaluate_language(results)
         chunk_health = (
@@ -98,7 +101,6 @@ async def run_benchmark(config: BenchmarkConfig) -> dict[str, Any]:
             if config.include_embedding_diagnostics
             else {"skipped": True}
         )
-        per_document = _per_document_stats(results)
 
         report = assemble_report(
             run_id=run_id,
@@ -107,35 +109,84 @@ async def run_benchmark(config: BenchmarkConfig) -> dict[str, Any]:
                 "organization_id": str(config.organization_id),
                 "workspace_id": str(config.workspace_id),
                 "knowledge_base_id": str(config.knowledge_base_id),
+                "curated_dataset_path": (
+                    str(config.curated_dataset_path) if config.curated_dataset_path else None
+                ),
+                "enable_auto_corpus_probes": config.enable_auto_corpus_probes,
                 "top_k": config.top_k,
-                "questions_per_document_min": config.questions_per_document_min,
-                "questions_per_document_max": config.questions_per_document_max,
-                "max_robustness_variants_per_question": config.max_robustness_variants_per_question,
+                "max_robustness_variants_per_question": (
+                    config.max_robustness_variants_per_question
+                ),
                 "include_generation": config.include_generation,
                 "seed": config.seed,
                 "embedding_backend": container.settings.embedding_backend,
                 "llm_backend": container.settings.llm_backend,
             },
             results=results,
-            retrieval_health=retrieval_health,
-            generation_health=generation_health,
+            retrieval_by_cohort=retrieval_by_cohort,
+            generation_by_cohort=generation_by_cohort,
             language_health=language_health,
             chunk_health=chunk_health,
             embedding_health=embedding_health,
-            per_document=per_document,
+            per_document=_per_document_stats(results),
+            notes=notes,
         )
         paths = write_reports(report, run_dir)
+        baseline_hit = (report.baseline_metrics.get("retrieval") or {}).get("hit_at_k")
         return {
             "run_id": run_id,
             "output_dir": str(run_dir),
             "paths": {key: str(path) for key, path in paths.items()},
-            "overall_health_score": report.overall_health_score,
-            "production_ready_for_persian": report.acceptance.production_ready_for_persian,
+            "baseline_hit_at_k": baseline_hit,
             "question_count": len(results),
             "base_question_count": len(base_questions),
             "chunk_count": len(chunks),
-            "pass_rate": report.pipeline_health.get("pass_rate"),
+            "notes": notes,
         }
+
+
+def _build_base_questions(
+    config: BenchmarkConfig,
+    chunks: list[Any],
+    notes: list[str],
+) -> list[GroundTruthQuestion]:
+    curated: list[GroundTruthQuestion] = []
+    if config.curated_dataset_path is not None:
+        curated = load_curated_dataset(
+            config.curated_dataset_path,
+            knowledge_base_id=str(config.knowledge_base_id),
+            chunks=chunks,
+        )
+        notes.append(
+            "Measured retrieval metrics use curated_external gold bound by passage text "
+            f"from {config.curated_dataset_path}."
+        )
+    elif not config.enable_auto_corpus_probes:
+        raise ValueError(
+            "Provide --dataset-path with curated Feature-007 gold for Measured metrics, "
+            "or pass --enable-auto-corpus-probes for non-Measured circular probes only."
+        )
+
+    probes: list[GroundTruthQuestion] = []
+    if config.enable_auto_corpus_probes:
+        probes = generate_ground_truth(
+            chunks,
+            knowledge_base_id=str(config.knowledge_base_id),
+            questions_per_document_min=config.questions_per_document_min,
+            questions_per_document_max=config.questions_per_document_max,
+            seed=config.seed,
+        )
+        notes.append(
+            "Auto corpus probes are included but eligible_for_measured_retrieval=false "
+            "(circular gold excluded from Measured Hit@k/Recall@k/Precision@k/MRR)."
+        )
+
+    if not curated and not probes:
+        raise ValueError("No questions produced.")
+
+    if curated:
+        return curated
+    return probes
 
 
 def _write_dataset(
@@ -150,15 +201,20 @@ def _write_dataset(
     with jsonl_path.open("w", encoding="utf-8") as handle:
         for question in questions:
             handle.write(json.dumps(question.to_dataset_row(), ensure_ascii=False) + "\n")
+    measured = sum(1 for q in questions if q.eligible_for_measured_retrieval)
     manifest = {
         "dataset_id": "persian-rag-benchmark",
         "dataset_version": "1.0.0",
         "knowledge_base_id": knowledge_base_id,
         "question_count": len(questions),
+        "measured_eligible_count": measured,
         "languages": ["fa"],
         "language_default": "fa",
         "created_at": datetime.now(UTC).isoformat(),
-        "notes": "Auto-generated by tools.persian_rag_benchmark for Version 1.0.0 diagnostics.",
+        "notes": (
+            "Baseline Measured metrics require curated_external gold. "
+            "Auto corpus probes are never Measured for retrieval."
+        ),
     }
     (dataset_dir / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2),
@@ -169,15 +225,27 @@ def _write_dataset(
 def _per_document_stats(results: list[QuestionRunResult]) -> list[dict[str, Any]]:
     grouped: dict[str, list[QuestionRunResult]] = defaultdict(list)
     for item in results:
-        grouped[item.expected_document_id].append(item)
+        if not item.eligible_for_measured_retrieval:
+            continue
+        grouped[item.expected_document_id or "unknown"].append(item)
     rows: list[dict[str, Any]] = []
     for document_id, items in sorted(grouped.items()):
+        baseline = [item for item in items if item.cohort.value == "baseline"]
+        robustness = [item for item in items if item.cohort.value == "robustness"]
         rows.append(
             {
                 "document_id": document_id,
-                "n": len(items),
-                "pass_rate": sum(1 for item in items if item.passed) / len(items),
-                "retrieval_hit_rate": sum(1 for item in items if item.retrieval_hit) / len(items),
+                "baseline_n": len(baseline),
+                "baseline_hit_at_k": _mean_hit(baseline),
+                "robustness_n": len(robustness),
+                "robustness_hit_at_k": _mean_hit(robustness),
             }
         )
     return rows
+
+
+def _mean_hit(items: list[QuestionRunResult]) -> float | None:
+    values = [float(item.hit_at_k) for item in items if item.hit_at_k is not None]
+    if not values:
+        return None
+    return sum(values) / len(values)

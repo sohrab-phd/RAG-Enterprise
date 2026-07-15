@@ -31,6 +31,10 @@ class BenchmarkConfig:
     knowledge_base_id: uuid.UUID | None = None
     document_ids: tuple[uuid.UUID, ...] = ()
     output_dir: Path = field(default_factory=lambda: Path("benchmark-artifacts") / "persian-rag")
+    # Curated Feature-007 gold (required for Measured retrieval metrics).
+    curated_dataset_path: Path | None = None
+    # Optional circular probe generation (never counted as Measured retrieval).
+    enable_auto_corpus_probes: bool = False
     top_k: int = 8
     questions_per_document_min: int = 40
     questions_per_document_max: int = 60

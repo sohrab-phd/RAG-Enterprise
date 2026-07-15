@@ -85,6 +85,8 @@ def _build_variants(
                     "robustness_kind": kind,
                     "tags": sorted(set(question.tags + ["robustness", kind.value])),
                     "notes": f"robustness_of={question.id};kind={kind.value}",
+                    "gold_provenance": question.gold_provenance,
+                    "eligible_for_measured_retrieval": (question.eligible_for_measured_retrieval),
                 }
             )
         )

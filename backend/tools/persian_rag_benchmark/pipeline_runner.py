@@ -11,12 +11,20 @@ from rag_enterprise.processing.language import detect_language
 from rag_enterprise.processing.normalization import normalize_persian_text
 from rag_enterprise.retrieval.models import SearchRequest
 from tools.persian_rag_benchmark.config import BenchmarkConfig
+from tools.persian_rag_benchmark.diagnostics.generation import score_answer
+from tools.persian_rag_benchmark.ir_metrics import (
+    hit_at_k,
+    precision_at_k,
+    recall_at_k,
+    reciprocal_rank,
+)
 from tools.persian_rag_benchmark.models import (
     GroundTruthQuestion,
     QuestionRunResult,
     RetrievedEvidence,
 )
 from tools.persian_rag_benchmark.persian_text import diagnose_language_surface
+from tools.persian_rag_benchmark.trust import EvaluationCohort
 
 
 async def run_pipeline_for_questions(
@@ -25,19 +33,12 @@ async def run_pipeline_for_questions(
     *,
     config: BenchmarkConfig,
 ) -> list[QuestionRunResult]:
-    """Call production RetrievalService (+ optional GenerationService) for each question."""
     assert container.retrieval_service is not None
     assert config.knowledge_base_id is not None
 
     results: list[QuestionRunResult] = []
     for question in questions:
-        results.append(
-            await _run_one(
-                container,
-                question,
-                config=config,
-            )
-        )
+        results.append(await _run_one(container, question, config=config))
     return results
 
 
@@ -50,6 +51,12 @@ async def _run_one(
     assert container.retrieval_service is not None
     kb_id = config.knowledge_base_id
     assert kb_id is not None
+
+    cohort = (
+        EvaluationCohort.BASELINE
+        if question.robustness_kind.value == "normal" and question.parent_question_id is None
+        else EvaluationCohort.ROBUSTNESS
+    )
 
     normalized = normalize_persian_text(question.question)
     language_issues = diagnose_language_surface(question.question)
@@ -85,9 +92,25 @@ async def _run_one(
         )
 
     retrieved_ids = [item.chunk_id for item in evidence]
-    hit = question.expected_chunk_id in retrieved_ids
-    rank = retrieved_ids.index(question.expected_chunk_id) + 1 if hit else None
-    correct_document = any(item.document_id == question.expected_document_id for item in evidence)
+    expected_ids = [question.expected_chunk_id] if question.expected_chunk_id else []
+    k = config.top_k
+
+    hit = recall = precision = mrr = rank = None
+    correct_chunk = False
+    if question.eligible_for_measured_retrieval and expected_ids:
+        hit = hit_at_k(retrieved_ids, expected_ids, k=k)
+        recall = recall_at_k(retrieved_ids, expected_ids, k=k)
+        precision = precision_at_k(retrieved_ids, expected_ids, k=k)
+        mrr = reciprocal_rank(retrieved_ids, expected_ids)
+        correct_chunk = hit >= 1.0
+        if question.expected_chunk_id in retrieved_ids:
+            rank = retrieved_ids.index(question.expected_chunk_id) + 1
+
+    correct_document = (
+        any(item.document_id == question.expected_document_id for item in evidence)
+        if question.expected_document_id
+        else False
+    )
     avg_score = sum(item.score for item in evidence) / len(evidence) if evidence else None
 
     generated_answer: str | None = None
@@ -96,7 +119,7 @@ async def _run_one(
     abstained = False
     generation_ms: int | None = None
     prompt_preview: str | None = None
-    gen_scores: dict[str, float | bool | None] = {}
+    gen: dict[str, object] = {}
 
     if config.include_generation and container.generation_service is not None:
         prompt_preview = (
@@ -128,9 +151,14 @@ async def _run_one(
         citations = [str(item.chunk_id) for item in generation.citations]
         generation_status = str(generation.status)
         abstained = generation.status == GenerationStatus.ABSTAINED
-        gen_scores = _score_generation(question, generation.answer, citations)
+        gen = score_answer(
+            gold=question.gold_answer,
+            predicted=generation.answer,
+            expected_chunk_id=question.expected_chunk_id,
+            cited_chunk_ids=citations,
+            category=question.category.value,
+        )
 
-    e2e_ms = retrieval_ms + (generation_ms or 0)
     return QuestionRunResult(
         question_id=question.id,
         question=question.question,
@@ -138,15 +166,21 @@ async def _run_one(
         category=question.category.value,
         difficulty=question.difficulty.value,
         robustness_kind=question.robustness_kind.value,
+        cohort=cohort,
+        gold_provenance=question.gold_provenance,
+        eligible_for_measured_retrieval=question.eligible_for_measured_retrieval,
         parent_question_id=question.parent_question_id,
         gold_answer=question.gold_answer,
         expected_chunk_id=question.expected_chunk_id,
         expected_document_id=question.expected_document_id,
         retrieved=evidence,
-        retrieval_hit=hit,
+        hit_at_k=hit,
+        recall_at_k=recall,
+        precision_at_k=precision,
+        mrr=mrr,
         retrieval_rank=rank,
         correct_document=correct_document,
-        correct_chunk=hit,
+        correct_chunk=correct_chunk,
         avg_retrieval_score=avg_score,
         detected_language=detected,
         prompt_preview=prompt_preview,
@@ -156,25 +190,16 @@ async def _run_one(
         abstained=abstained,
         retrieval_latency_ms=retrieval_ms,
         generation_latency_ms=generation_ms,
-        e2e_latency_ms=e2e_ms,
+        e2e_latency_ms=retrieval_ms + (generation_ms or 0),
         language_issues=language_issues,
-        generation_scores=gen_scores,
-        warnings=list(retrieval.warnings) if hasattr(retrieval, "warnings") else [],
-    )
-
-
-def _score_generation(
-    question: GroundTruthQuestion,
-    answer: str | None,
-    citations: list[str],
-) -> dict[str, float | bool | None]:
-    from tools.persian_rag_benchmark.diagnostics.generation import score_answer
-
-    return score_answer(
-        gold=question.gold_answer,
-        predicted=answer,
-        expected_chunk_id=question.expected_chunk_id,
-        cited_chunk_ids=citations,
-        expected_citation_text=question.expected_citation_text,
-        category=question.category.value,
+        exact_match=gen.get("exact_match") if gen else None,  # type: ignore[arg-type]
+        lexical_overlap=gen.get("lexical_overlap") if gen else None,  # type: ignore[arg-type]
+        heuristic_fluency_estimate=gen.get("heuristic_fluency_estimate") if gen else None,  # type: ignore[arg-type]
+        entity_match_estimate=gen.get("entity_match_estimate") if gen else None,  # type: ignore[arg-type]
+        procedure_match_estimate=gen.get("procedure_match_estimate") if gen else None,  # type: ignore[arg-type]
+        groundedness_estimate=gen.get("groundedness_estimate") if gen else None,  # type: ignore[arg-type]
+        hallucination_risk_estimate=gen.get("hallucination_risk_estimate") if gen else None,  # type: ignore[arg-type]
+        citation_accuracy=gen.get("citation_accuracy") if gen else None,  # type: ignore[arg-type]
+        numeric_accuracy=gen.get("numeric_accuracy") if gen else None,  # type: ignore[arg-type]
+        warnings=list(retrieval.warnings),
     )

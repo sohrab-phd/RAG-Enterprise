@@ -38,7 +38,10 @@ def diagnose_chunks(
                 "sentence_count": len(split_persian_sentences(text)),
                 "token_estimate": token_estimate(text),
                 "language": chunk.language,
-                "overlap_hint": max(0, chunk.end_offset - chunk.start_offset),
+                "overlap_span_chars": max(0, chunk.end_offset - chunk.start_offset),
+                "note_overlap_span_chars": (
+                    "Span length end_offset-start_offset; NOT inter-chunk overlap."
+                ),
                 "retrieval_frequency": freq,
                 "looks_like_table": looks_like_table(text),
                 "looks_like_list": looks_like_list(text),

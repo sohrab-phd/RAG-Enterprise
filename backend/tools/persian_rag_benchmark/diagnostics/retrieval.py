@@ -1,76 +1,103 @@
-"""Retrieval quality diagnostics."""
+"""Retrieval quality diagnostics with cohort isolation."""
 
 from __future__ import annotations
 
-from collections import Counter
-from statistics import mean
+from typing import Any
 
+from tools.persian_rag_benchmark.ir_metrics import aggregate_ir
 from tools.persian_rag_benchmark.models import QuestionRunResult
+from tools.persian_rag_benchmark.trust import EvaluationCohort, MetricTrust
 
 
-def evaluate_retrieval(results: list[QuestionRunResult], *, top_k: int) -> dict[str, object]:
-    answerable = [item for item in results if item.expected_chunk_id]
-    if not answerable:
-        return {
-            "n": 0,
-            "hit_rate": None,
-            "recall_at_k": None,
-            "precision_at_k": None,
-            "mrr": None,
-            "avg_retrieval_score": None,
-            "correct_document_rate": None,
-            "correct_chunk_rate": None,
-        }
+def evaluate_retrieval_by_cohort(
+    results: list[QuestionRunResult],
+    *,
+    top_k: int,
+) -> dict[str, Any]:
+    """Compute IR metrics separately for baseline and robustness cohorts.
 
-    hits = [item for item in answerable if item.retrieval_hit]
-    reciprocal_ranks: list[float] = []
-    precisions: list[float] = []
-    for item in answerable:
-        if item.retrieval_rank is not None:
-            reciprocal_ranks.append(1.0 / item.retrieval_rank)
-        else:
-            reciprocal_ranks.append(0.0)
-        retrieved = {ev.chunk_id for ev in item.retrieved}
-        expected = {item.expected_chunk_id}
-        if retrieved:
-            precisions.append(len(retrieved & expected) / min(top_k, len(retrieved)))
-        else:
-            precisions.append(0.0)
-
-    scores = [
-        item.avg_retrieval_score for item in answerable if item.avg_retrieval_score is not None
-    ]
+    Measured retrieval metrics include only questions with
+    ``eligible_for_measured_retrieval`` (curated external gold).
+    """
     return {
-        "n": len(answerable),
-        "hit_rate": len(hits) / len(answerable),
-        "recall_at_k": len(hits) / len(answerable),
-        "precision_at_k": mean(precisions) if precisions else None,
-        "mrr": mean(reciprocal_ranks) if reciprocal_ranks else None,
-        "avg_retrieval_score": mean(scores) if scores else None,
-        "correct_document_rate": mean(1.0 if item.correct_document else 0.0 for item in answerable),
-        "correct_chunk_rate": mean(1.0 if item.correct_chunk else 0.0 for item in answerable),
+        EvaluationCohort.BASELINE.value: _eval_cohort(
+            [
+                item
+                for item in results
+                if item.cohort == EvaluationCohort.BASELINE and item.eligible_for_measured_retrieval
+            ],
+            top_k=top_k,
+            cohort=EvaluationCohort.BASELINE,
+        ),
+        EvaluationCohort.ROBUSTNESS.value: _eval_cohort(
+            [
+                item
+                for item in results
+                if item.cohort == EvaluationCohort.ROBUSTNESS
+                and item.eligible_for_measured_retrieval
+            ],
+            top_k=top_k,
+            cohort=EvaluationCohort.ROBUSTNESS,
+        ),
+        "excluded_auto_corpus_probe_count": sum(
+            1 for item in results if not item.eligible_for_measured_retrieval
+        ),
+        "definitions": {
+            "hit_at_k": MetricTrust.MEASURED.value,
+            "recall_at_k": MetricTrust.MEASURED.value,
+            "precision_at_k": MetricTrust.MEASURED.value,
+            "mrr": MetricTrust.MEASURED.value,
+        },
+    }
+
+
+def _eval_cohort(
+    results: list[QuestionRunResult],
+    *,
+    top_k: int,
+    cohort: EvaluationCohort,
+) -> dict[str, Any]:
+    rows: list[dict[str, float]] = []
+    for item in results:
+        if item.hit_at_k is None:
+            continue
+        rows.append(
+            {
+                "hit_at_k": float(item.hit_at_k),
+                "recall_at_k": float(item.recall_at_k or 0.0),
+                "precision_at_k": float(item.precision_at_k or 0.0),
+                "mrr": float(item.mrr or 0.0),
+            }
+        )
+    aggregated = aggregate_ir(rows)
+    scores = [item.avg_retrieval_score for item in results if item.avg_retrieval_score is not None]
+    return {
+        "cohort": cohort.value,
         "top_k": top_k,
-        "failure_counts": dict(
-            Counter("miss" if not item.retrieval_hit else "hit" for item in answerable)
+        "trust": MetricTrust.MEASURED.value,
+        **aggregated,
+        "avg_retrieval_score": (sum(scores) / len(scores) if scores else None),
+        "correct_document_rate": (
+            sum(1 for item in results if item.correct_document) / len(results) if results else None
+        ),
+        "correct_chunk_rate": (
+            sum(1 for item in results if item.correct_chunk) / len(results) if results else None
         ),
     }
 
 
-def explain_retrieval_failure(result: QuestionRunResult) -> str | None:
-    if result.retrieval_hit:
-        return None
+def explain_retrieval_miss(result: QuestionRunResult) -> list[str]:
+    evidence: list[str] = []
+    if result.hit_at_k == 1.0:
+        return evidence
     if not result.retrieved:
-        return (
-            "هیچ قطعه‌ای بازیابی نشد؛ ممکن است ایندکس خالی باشد، "
-            "آستانه شباهت پایین باشد، یا زبان کوئری/قطعه ناسازگار باشد."
-        )
+        evidence.append("RetrievalService returned zero chunks.")
+        return evidence
     if result.correct_document and not result.correct_chunk:
-        return (
-            "سند صحیح بازیابی شد اما قطعهٔ طلایی در top-k نبود؛ "
-            "احتمالاً قطعه‌بندی مرز معنایی فارسی را شکسته یا embedding پرسش را منحرف کرده است."
+        evidence.append(
+            f"Expected document {result.expected_document_id} appeared but "
+            f"expected chunk {result.expected_chunk_id} did not."
         )
     top = result.retrieved[0]
-    return (
-        f"قطعهٔ طلایی در رتبهٔ top-k نبود. بهترین نتیجه chunk={top.chunk_id} "
-        f"با امتیاز {top.score:.4f} از سند {top.document_id} بود."
-    )
+    evidence.append(f"Top-1 chunk={top.chunk_id} score={top.score:.4f} document={top.document_id}.")
+    return evidence

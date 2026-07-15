@@ -18,6 +18,7 @@ from tools.persian_rag_benchmark.persian_text import (
     extract_numbers,
     split_persian_sentences,
 )
+from tools.persian_rag_benchmark.trust import GoldProvenance
 
 # Balanced category rotation for 40–60 questions per document.
 _CATEGORY_CYCLE: tuple[QuestionCategory, ...] = (
@@ -49,7 +50,12 @@ def generate_ground_truth(
     questions_per_document_max: int = 60,
     seed: int = 42,
 ) -> list[GroundTruthQuestion]:
-    """Build 40–60 natural Persian questions per document from chunk text."""
+    """Build probe questions from corpus text.
+
+    IMPORTANT: These are ``auto_corpus_probe`` items. They are **not** eligible for
+    Measured retrieval metrics (circular: expected chunk == generation source).
+    Use curated external gold for Measured Hit@k / Recall@k / Precision@k / MRR.
+    """
     by_document: dict[str, list[ChunkSnapshot]] = defaultdict(list)
     for chunk in chunks:
         by_document[str(chunk.document_id)].append(chunk)
@@ -449,9 +455,11 @@ def _make_question(
         category=category,
         difficulty=difficulty,
         keywords=keywords,
-        tags=[category.value, "fa"],
+        tags=[category.value, "fa", "auto_corpus_probe"],
         language="fa",
         notes=notes,
+        gold_provenance=GoldProvenance.AUTO_CORPUS_PROBE,
+        eligible_for_measured_retrieval=False,
     )
 
 

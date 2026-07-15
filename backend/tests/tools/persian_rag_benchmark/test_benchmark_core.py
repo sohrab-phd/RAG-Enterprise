@@ -1,4 +1,4 @@
-"""Unit tests for Persian RAG benchmark tool (no production mutation)."""
+"""Unit tests for Persian RAG benchmark RC1.7 trustworthiness fixes."""
 
 from __future__ import annotations
 
@@ -7,114 +7,111 @@ import uuid
 from tools.persian_rag_benchmark.diagnostics.generation import score_answer
 from tools.persian_rag_benchmark.diagnostics.root_cause import assign_root_causes
 from tools.persian_rag_benchmark.ground_truth import generate_ground_truth
+from tools.persian_rag_benchmark.ir_metrics import (
+    hit_at_k,
+    precision_at_k,
+    recall_at_k,
+    reciprocal_rank,
+)
 from tools.persian_rag_benchmark.models import (
     ChunkSnapshot,
     Difficulty,
-    FailureLabel,
     GroundTruthQuestion,
     QuestionCategory,
     QuestionRunResult,
+    RcaFinding,
     RobustnessKind,
 )
-from tools.persian_rag_benchmark.persian_text import (
-    arabic_yeh_kaf_variant,
-    to_latin_digits,
-    to_persian_digits,
-)
+from tools.persian_rag_benchmark.persian_text import to_latin_digits
 from tools.persian_rag_benchmark.robustness import expand_robustness_variants
+from tools.persian_rag_benchmark.trust import (
+    EvaluationCohort,
+    GoldProvenance,
+    MetricTrust,
+)
 
 
-def _chunk(text: str, seq: int = 0) -> ChunkSnapshot:
-    doc = uuid.UUID("018f0000-0000-7000-8000-00000000d001")
-    ver = uuid.UUID("018f0000-0000-7000-8000-00000000e001")
-    kb = uuid.UUID("018f0000-0000-7000-8000-0000000000b1")
-    return ChunkSnapshot(
+def test_precision_at_k_uses_fixed_denominator_k() -> None:
+    retrieved = ["a"]  # fewer than k
+    expected = ["a"]
+    # Standard P@5 = 1/5 when only one hit and k=5
+    assert precision_at_k(retrieved, expected, k=5) == 0.2
+    assert hit_at_k(retrieved, expected, k=5) == 1.0
+    assert recall_at_k(retrieved, expected, k=5) == 1.0
+
+
+def test_mrr_and_miss() -> None:
+    assert reciprocal_rank(["x", "gold", "y"], ["gold"]) == 0.5
+    assert reciprocal_rank(["x", "y"], ["gold"]) == 0.0
+
+
+def test_auto_ground_truth_is_not_measured_eligible() -> None:
+    chunk = ChunkSnapshot(
         chunk_id=uuid.uuid4(),
-        document_id=doc,
-        document_version_id=ver,
-        knowledge_base_id=kb,
-        sequence_number=seq,
-        text=text,
-        language="fa",
-        document_title="سیاست مرخصی",
-    )
-
-
-def test_digit_normalization_helpers() -> None:
-    assert to_latin_digits("۲۰ روز") == "20 روز"
-    assert "۲۰" in to_persian_digits("20 روز")
-
-
-def test_arabic_yeh_kaf_variant_changes_letters() -> None:
-    source = "مرخصی کارکنان"
-    variant = arabic_yeh_kaf_variant(source)
-    assert variant != source
-
-
-def test_ground_truth_generates_balanced_persian_questions() -> None:
-    chunks = [
-        _chunk(
+        document_id=uuid.UUID("018f0000-0000-7000-8000-0000000000d1"),
+        document_version_id=uuid.UUID("018f0000-0000-7000-8000-0000000000e1"),
+        knowledge_base_id=uuid.UUID("018f0000-0000-7000-8000-0000000000b1"),
+        sequence_number=0,
+        text=(
             "مرخصی استحقاقی سالانه کارکنان رسمی ۲۰ روز کاری است. "
-            "حداکثر پنج روز استفاده‌نشده با تأیید منابع انسانی منتقل می‌شود. "
-            "مرخصی استعلاجی با گواهی پزشکی تا هفت روز پذیرفته می‌شود. "
-            "دورکاری از سهمیه مرخصی کسر نمی‌شود و فقط با مجوز مدیر مجاز است.",
-            seq=0,
+            "حداکثر پنج روز استفاده‌نشده قابل انتقال است."
         ),
-        _chunk(
-            "مهلت ثبت درخواست حداکثر سه روز کاری است. "
-            "در صورت تعارض، سند تخصصی معیار است و واحد منابع انسانی مسئول پیگیری است.",
-            seq=1,
-        ),
-    ]
-    questions = generate_ground_truth(
-        chunks,
-        knowledge_base_id=str(chunks[0].knowledge_base_id),
-        questions_per_document_min=40,
-        questions_per_document_max=45,
-        seed=7,
+        language="fa",
     )
-    assert 40 <= len(questions) <= 45
-    assert all(item.language == "fa" for item in questions)
-    assert all(item.expected_chunk_id for item in questions)
-    categories = {item.category for item in questions}
-    assert QuestionCategory.FACTUAL in categories or QuestionCategory.NUMERICAL in categories
+    questions = generate_ground_truth(
+        [chunk],
+        knowledge_base_id=str(chunk.knowledge_base_id),
+        questions_per_document_min=40,
+        questions_per_document_max=40,
+        seed=1,
+    )
+    assert questions
+    assert all(item.gold_provenance == GoldProvenance.AUTO_CORPUS_PROBE for item in questions)
+    assert all(item.eligible_for_measured_retrieval is False for item in questions)
 
 
-def test_robustness_expands_variants() -> None:
+def test_robustness_preserves_provenance_and_is_separate_cohort() -> None:
     base = GroundTruthQuestion(
         id="q1",
         question="مرخصی سالانه کارکنان چند روز است؟",
         gold_answer="۲۰ روز کاری",
         supporting_passage="مرخصی استحقاقی سالانه ۲۰ روز کاری است.",
         expected_citation_text="۲۰ روز کاری",
-        expected_document_id="018f0000-0000-7000-8000-00000000d001",
-        expected_chunk_id="018f0000-0000-7000-8000-00000000c001",
-        knowledge_base_id="018f0000-0000-7000-8000-00000000kb01",
+        expected_document_id="018f0000-0000-7000-8000-0000000000d1",
+        expected_chunk_id="018f0000-0000-7000-8000-0000000000c1",
+        knowledge_base_id="018f0000-0000-7000-8000-0000000000b1",
         category=QuestionCategory.NUMERICAL,
         difficulty=Difficulty.EASY,
         keywords=["مرخصی"],
         tags=["leave"],
+        gold_provenance=GoldProvenance.CURATED_EXTERNAL,
+        eligible_for_measured_retrieval=True,
     )
-    expanded = expand_robustness_variants([base], max_variants_per_question=5, seed=1)
-    assert len(expanded) == 1 + 5
+    expanded = expand_robustness_variants([base], max_variants_per_question=3, seed=1)
     assert expanded[0].robustness_kind == RobustnessKind.NORMAL
-    assert any(item.parent_question_id == "q1" for item in expanded[1:])
+    for variant in expanded[1:]:
+        assert variant.parent_question_id == "q1"
+        assert variant.gold_provenance == GoldProvenance.CURATED_EXTERNAL
+        assert variant.eligible_for_measured_retrieval is True
 
 
-def test_score_answer_numeric_and_citation() -> None:
+def test_score_answer_renames_heuristics() -> None:
     scores = score_answer(
         gold="مرخصی سالانه ۲۰ روز کاری است.",
         predicted="بر اساس سند، مرخصی سالانه 20 روز کاری است.",
         expected_chunk_id="c1",
         cited_chunk_ids=["c1"],
-        expected_citation_text="۲۰ روز کاری",
         category="numerical",
     )
+    assert "lexical_overlap" in scores
+    assert "semantic_similarity" not in scores
+    assert "heuristic_fluency_estimate" in scores
     assert scores["citation_accuracy"] is True
     assert scores["numeric_accuracy"] == 1.0
+    assert to_latin_digits("۲۰") == "20"
 
 
-def test_root_cause_labels_missed_retrieval() -> None:
+def test_rca_returns_confidence_and_evidence() -> None:
     result = QuestionRunResult(
         question_id="q-fail",
         question="مرخصي سالانه چند روز است؟",
@@ -122,17 +119,28 @@ def test_root_cause_labels_missed_retrieval() -> None:
         category="numerical",
         difficulty="easy",
         robustness_kind="arabic_yeh_kaf",
+        cohort=EvaluationCohort.ROBUSTNESS,
+        gold_provenance=GoldProvenance.CURATED_EXTERNAL,
+        eligible_for_measured_retrieval=True,
         gold_answer="۲۰",
         expected_chunk_id="c-expected",
         expected_document_id="d1",
         retrieved=[],
-        retrieval_hit=False,
-        correct_document=False,
-        correct_chunk=False,
-        language_issues=["arabic_yeh_or_kaf", "differs_from_production_normalize"],
+        hit_at_k=0.0,
+        recall_at_k=0.0,
+        precision_at_k=0.0,
+        mrr=0.0,
+        language_issues=["arabic_yeh_or_kaf"],
         detected_language="fa",
     )
     labeled = assign_root_causes([result])[0]
-    assert labeled.passed is False
-    assert FailureLabel.RETRIEVAL in labeled.failure_labels
-    assert labeled.failure_explanation
+    assert labeled.passed_measured is False
+    assert labeled.rca
+    assert isinstance(labeled.rca[0], RcaFinding)
+    assert 0.0 <= labeled.rca[0].confidence <= 1.0
+    assert labeled.rca[0].evidence
+
+
+def test_metric_trust_enum_values() -> None:
+    assert MetricTrust.MEASURED.value == "Measured"
+    assert MetricTrust.HEURISTIC.value == "Heuristic"
