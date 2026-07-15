@@ -1,7 +1,46 @@
 # First Run (Version 1.0.0)
 
 Canonical bring-up guide for RAG-enterprise **Version 1.0.0** from a fresh clone.
-Follow the sections **in order**.
+
+---
+
+## Quick Start (recommended)
+
+From the repository root (the folder that contains `backend/`, `frontend/`, and
+`docker-compose.yml`), after cloning and creating `.env` / `backend/.env` once:
+
+```bash
+cd /path/to/RAG-Enterprise
+uv run python run.py
+```
+
+This **developer launcher** will:
+
+1. Validate Python, uv, Docker, Compose, Node, and npm
+2. Start Docker Compose (`postgres` + `redis`) and wait until healthy
+3. Run `alembic upgrade head`
+4. Start the FastAPI backend (`uvicorn --reload` on port 8000)
+5. Start the Vite frontend (`npm run dev`)
+6. Print Frontend / Swagger / Health / System URLs
+
+Press **Ctrl+C** to stop the backend and frontend and run `docker compose down`
+(volumes are preserved).
+
+Optional:
+
+```bash
+# Skip opening the browser automatically
+AUTO_OPEN_BROWSER=false uv run python run.py
+```
+
+Prerequisites (install once) and first-time `.env` setup are below. Use the manual
+sections only if you prefer step-by-step control.
+
+---
+
+## Overview
+
+Follow the sections **in order** if you are not using `run.py`.
 
 **Directory rule:** Never assume which folder your shell is in. Every major section
 starts with an explicit `cd`. Replace `/path/to/RAG-Enterprise` with the absolute

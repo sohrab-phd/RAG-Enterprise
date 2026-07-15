@@ -87,3 +87,6 @@ eval-artifacts/
 backend/storage/
 backend/eval-artifacts/
 backend/benchmark-artifacts/
+
+# Developer launcher stop signal (runtime)
+.dev_launcher_stop

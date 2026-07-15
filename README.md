@@ -54,16 +54,26 @@ Expanded checklist: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#prerequisites).
 
 ## Quick start
 
-Full walkthrough: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). Minimal path:
+**One command** (after `.env` + `backend/.env` exist — copy from `.env.example` once):
 
-### 1. Infrastructure
+```bash
+uv run python run.py
+```
+
+This starts Docker (Postgres/Redis), migrations, backend, and frontend. Details:
+[docs/FIRST_RUN.md](docs/FIRST_RUN.md).
+
+Manual minimal path (if you prefer separate terminals): see
+[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+
+### Infrastructure only
 
 ```bash
 cp .env.example .env
 docker compose up -d
 ```
 
-### 2. Backend
+### Backend only
 
 ```bash
 cd backend
@@ -75,7 +85,7 @@ uv run uvicorn rag_enterprise.main:app --reload --host 0.0.0.0 --port 8000
 - Readiness: <http://localhost:8000/api/v1/ready>
 - OpenAPI: <http://localhost:8000/docs>
 
-### 3. Frontend
+### Frontend only
 
 ```bash
 cd frontend
@@ -85,7 +95,7 @@ npm run dev
 
 Open the URL printed by Vite (normally <http://localhost:5173>).
 
-### 4. Try the demo
+### Try the demo
 
 Import `demo/knowledge/`, index, and chat — see [Demo Guide](docs/DEMO_GUIDE.md).
 
