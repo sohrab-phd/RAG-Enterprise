@@ -6,6 +6,11 @@ import re
 import uuid
 from dataclasses import dataclass
 
+from rag_enterprise.generation.context_assembly import (
+    ContextAssemblyResult,
+    ContextBlock,
+    assemble_context,
+)
 from rag_enterprise.generation.exceptions import PromptTooLargeError
 from rag_enterprise.generation.models import BuiltPrompt, MessageRole, MessageTurn
 from rag_enterprise.generation.templates import v1
@@ -61,18 +66,24 @@ class PromptBuilder:
         language = self.detect_language(question, language_hint)
         language_name = self.language_name(language)
         history_used = self.clamp_history(history)
-        chunks_used = list(chunks)
+        assembly = assemble_context(chunks)
+        blocks = list(assembly.blocks)
 
         while True:
             system_prompt = v1.SYSTEM_TEMPLATE.format(language_name=language_name)
-            user_prompt, markers = self._compose_user_prompt(
+            user_prompt, markers, chunks_used = self._compose_user_prompt(
                 question=question,
-                chunks=chunks_used,
+                blocks=blocks,
                 history=history_used,
                 language_name=language_name,
             )
             total = len(system_prompt) + len(user_prompt)
             if total <= self._config.max_prompt_chars:
+                diagnostics = self._diagnostics_with_prompt(
+                    assembly=assembly,
+                    blocks=blocks,
+                    user_prompt=user_prompt,
+                )
                 return BuiltPrompt(
                     system_prompt=system_prompt,
                     user_prompt=user_prompt,
@@ -80,12 +91,14 @@ class PromptBuilder:
                     markers=markers,
                     chunks_used=chunks_used,
                     history_used=history_used,
+                    context_diagnostics=diagnostics,
                 )
             if history_used:
                 history_used = history_used[1:]
                 continue
-            if len(chunks_used) > 1:
-                chunks_used = chunks_used[:-1]
+            if len(blocks) > 1:
+                # Drop lowest-score block (blocks ordered by score desc).
+                blocks = blocks[:-1]
                 continue
             raise PromptTooLargeError()
 
@@ -93,12 +106,14 @@ class PromptBuilder:
         self,
         *,
         question: str,
-        chunks: list[RetrievedChunk],
+        blocks: list[ContextBlock],
         history: list[MessageTurn],
         language_name: str,
-    ) -> tuple[str, dict[str, uuid.UUID]]:
+    ) -> tuple[str, dict[str, uuid.UUID], list[RetrievedChunk]]:
         markers: dict[str, uuid.UUID] = {}
         parts: list[str] = []
+        chunks_used: list[RetrievedChunk] = []
+        marker_index = 0
 
         if history:
             parts.append(v1.HISTORY_HEADER)
@@ -107,24 +122,78 @@ class PromptBuilder:
             parts.append("")
 
         parts.append(v1.EVIDENCE_HEADER)
-        for index, chunk in enumerate(chunks, start=1):
-            marker = str(index)
-            markers[marker] = chunk.chunk_id
-            text = chunk.text.strip()
-            if len(text) > self._config.excerpt_chars * 4:
-                text = text[: self._config.excerpt_chars * 4] + "…"
+        previous_heading: str | None = None
+        for block in blocks:
+            heading_label = (block.heading or "").strip()
+            if heading_label and heading_label != previous_heading:
+                parts.append(heading_label)
+                previous_heading = heading_label
+
+            marker_index += 1
+            primary_marker = str(marker_index)
+            markers[primary_marker] = block.primary.chunk_id
+            chunks_used.append(block.primary)
+            text = block.merged_text.strip()
+            max_chars = self._config.excerpt_chars * 4
+            if len(text) > max_chars:
+                text = text[:max_chars] + "…"
             parts.append(
                 v1.CHUNK_FORMAT.format(
-                    marker=marker,
-                    chunk_id=chunk.chunk_id,
-                    document_id=chunk.document_id,
-                    heading=chunk.heading or "(none)",
+                    marker=primary_marker,
+                    chunk_id=block.primary.chunk_id,
+                    document_id=block.primary.document_id,
+                    heading=block.heading or "(none)",
                     text=text,
                 ).rstrip()
             )
+
+            for secondary in block.chunks:
+                if secondary.chunk_id == block.primary.chunk_id:
+                    continue
+                marker_index += 1
+                secondary_marker = str(marker_index)
+                markers[secondary_marker] = secondary.chunk_id
+                chunks_used.append(secondary)
+                parts.append(
+                    v1.CHUNK_FORMAT.format(
+                        marker=secondary_marker,
+                        chunk_id=secondary.chunk_id,
+                        document_id=secondary.document_id,
+                        heading=secondary.heading or block.heading or "(none)",
+                        text=f"[included in [{primary_marker}]]",
+                    ).rstrip()
+                )
+
         parts.append("")
         parts.append(v1.QUESTION_HEADER)
         parts.append(question.strip())
         parts.append("")
         parts.append(v1.OUTPUT_RULES.format(language_name=language_name))
-        return "\n".join(parts), markers
+        return "\n".join(parts), markers, chunks_used
+
+    @staticmethod
+    def _diagnostics_with_prompt(
+        *,
+        assembly: ContextAssemblyResult,
+        blocks: list[ContextBlock],
+        user_prompt: str,
+    ) -> dict[str, object]:
+        # Recompute diagnostics if size trimming dropped blocks.
+        trimmed = ContextAssemblyResult(
+            blocks=tuple(blocks),
+            chunks_for_citations=tuple(chunk for block in blocks for chunk in block.chunks),
+            original_chunk_ids=assembly.original_chunk_ids,
+            duplicate_removed_ids=assembly.duplicate_removed_ids,
+            duplicated_chars_removed=assembly.duplicated_chars_removed,
+            context_char_count=sum(len(block.merged_text) for block in blocks),
+            estimated_token_count=max(
+                1,
+                (sum(len(block.merged_text) for block in blocks) + 3) // 4,
+            )
+            if blocks
+            else 0,
+        )
+        payload = trimmed.to_diagnostics()
+        payload["final_prompt_chars"] = len(user_prompt)
+        payload["evidence_prompt_chars"] = user_prompt.count("text:")  # presence signal
+        return payload

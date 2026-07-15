@@ -197,6 +197,7 @@ class QuestionRunResult(BaseModel):
     hallucination_risk_estimate: bool | None = None
     citation_accuracy: bool | None = None
     numeric_accuracy: float | None = None
+    context_diagnostics: dict[str, object] = Field(default_factory=dict)
     rca: list[RcaFinding] = Field(default_factory=list)
     passed_measured: bool = False
     warnings: list[str] = Field(default_factory=list)
@@ -238,6 +239,7 @@ class BenchmarkReport(BaseModel):
     chunk_health: dict[str, Any]
     embedding_health: dict[str, Any]
     retrieval_detail: dict[str, Any] = Field(default_factory=dict)
+    context_assembly: dict[str, Any] = Field(default_factory=dict)
     per_document: list[dict[str, Any]]
     questions: list[QuestionRunResult]
     notes: list[str] = Field(default_factory=list)

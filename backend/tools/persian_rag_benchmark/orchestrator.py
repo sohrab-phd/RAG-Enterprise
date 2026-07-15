@@ -14,6 +14,7 @@ from tools.persian_rag_benchmark.config import BenchmarkConfig
 from tools.persian_rag_benchmark.corpus import load_kb_chunks
 from tools.persian_rag_benchmark.curated_gold import load_curated_dataset
 from tools.persian_rag_benchmark.diagnostics.chunks import diagnose_chunks
+from tools.persian_rag_benchmark.diagnostics.context_assembly import evaluate_context_assembly
 from tools.persian_rag_benchmark.diagnostics.embeddings import diagnose_embeddings
 from tools.persian_rag_benchmark.diagnostics.generation import evaluate_generation_by_cohort
 from tools.persian_rag_benchmark.diagnostics.language import evaluate_language
@@ -107,6 +108,7 @@ async def run_benchmark(config: BenchmarkConfig) -> dict[str, Any]:
             configured_top_k=config.top_k,
             configured_min_evidence_score=float(container.settings.generation_min_evidence_score),
         )
+        context_assembly = evaluate_context_assembly(results)
 
         report = assemble_report(
             run_id=run_id,
@@ -138,6 +140,7 @@ async def run_benchmark(config: BenchmarkConfig) -> dict[str, Any]:
             chunk_health=chunk_health,
             embedding_health=embedding_health,
             retrieval_detail=retrieval_detail,
+            context_assembly=context_assembly,
             per_document=_per_document_stats(results),
             notes=notes,
         )
@@ -156,6 +159,8 @@ async def run_benchmark(config: BenchmarkConfig) -> dict[str, Any]:
             ),
             "recommended_top_k": retrieval_detail.get("recommended_top_k"),
             "false_abstain_count": (retrieval_detail.get("false_abstains") or {}).get("count"),
+            "avg_context_blocks": context_assembly.get("avg_final_blocks"),
+            "avg_duplicate_removals": context_assembly.get("avg_duplicate_removals"),
             "notes": notes,
         }
 

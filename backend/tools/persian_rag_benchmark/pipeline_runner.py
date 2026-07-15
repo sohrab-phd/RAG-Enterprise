@@ -119,19 +119,18 @@ async def _run_one(
     abstained = False
     generation_ms: int | None = None
     prompt_preview: str | None = None
+    context_diagnostics: dict[str, object] = {}
     gen: dict[str, object] = {}
 
     if config.include_generation and container.generation_service is not None:
-        prompt_preview = (
-            PromptBuilder()
-            .build(
-                question=question.question,
-                chunks=list(retrieval.results),
-                history=[],
-                language_hint="fa",
-            )
-            .user_prompt[:500]
+        built_preview = PromptBuilder().build(
+            question=question.question,
+            chunks=list(retrieval.results),
+            history=[],
+            language_hint="fa",
         )
+        prompt_preview = built_preview.user_prompt[:500]
+        context_diagnostics = dict(built_preview.context_diagnostics)
         gen_started = time.perf_counter()
         generation = await container.generation_service.generate(
             GenerationRequest(
@@ -201,5 +200,6 @@ async def _run_one(
         hallucination_risk_estimate=gen.get("hallucination_risk_estimate") if gen else None,  # type: ignore[arg-type]
         citation_accuracy=gen.get("citation_accuracy") if gen else None,  # type: ignore[arg-type]
         numeric_accuracy=gen.get("numeric_accuracy") if gen else None,  # type: ignore[arg-type]
+        context_diagnostics=context_diagnostics,
         warnings=list(retrieval.warnings),
     )

@@ -98,3 +98,4 @@ class BuiltPrompt(BaseModel):
     markers: dict[str, uuid.UUID]
     chunks_used: list[RetrievedChunk]
     history_used: list[MessageTurn]
+    context_diagnostics: dict[str, object] = Field(default_factory=dict)
