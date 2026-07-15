@@ -135,6 +135,43 @@ async def test_language_filter(
 
 
 @pytest.mark.asyncio
+async def test_retrieve_normalizes_arabic_yeh_kaf_before_embed(
+    rag_session_factory: async_sessionmaker[AsyncSession],
+    indexing_service: IndexingService,
+    retrieval_service: RetrievalService,
+    org_id: uuid.UUID,
+    workspace_id: uuid.UUID,
+) -> None:
+    """Query text uses the same normalize_persian_text pipeline as documents."""
+    async with rag_session_factory() as session:
+        kb, _, version, _ = await seed_chunked_version(
+            session,
+            org_id=org_id,
+            workspace_id=workspace_id,
+            texts=["سیاست مرخصی کارکنان در سازمان شرح داده شده است."],
+            languages=["fa"],
+        )
+        kb_id = kb.id
+        version_id = version.id
+
+    await indexing_service.index_document_version(version_id)
+
+    # Arabic yeh/kaf in the user question must not be embedded raw.
+    response = await retrieval_service.retrieve(
+        SearchRequest(
+            query_text="سياست مرخصي كاركنان!!!",
+            organization_id=org_id,
+            workspace_id=workspace_id,
+            knowledge_base_id=kb_id,
+            top_k=3,
+            permissions=ALL_PERMISSIONS,
+        )
+    )
+    assert response.query_text == "سیاست مرخصی کارکنان!"
+    assert response.result_count >= 1
+
+
+@pytest.mark.asyncio
 async def test_empty_query_rejected(
     retrieval_service: RetrievalService,
     org_id: uuid.UUID,

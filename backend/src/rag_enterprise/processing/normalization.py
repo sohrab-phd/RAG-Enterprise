@@ -44,9 +44,12 @@ _QUOTE_TRANSLATION = str.maketrans(
 _UNICODE_SPACE_RE = re.compile("[\u00a0\u1680\u2000-\u200a\u202f\u205f\u3000]")
 
 # Arabic tashkeel / Quranic marks. Keep U+0654 HAMZA ABOVE (Persian ezafe on هٔ).
-_ARABIC_DIACRITICS_RE = re.compile(
-    "[\u0610-\u061a\u064b-\u0652\u0655-\u065f\u0670\u06d6-\u06ed]"
-)
+_ARABIC_DIACRITICS_RE = re.compile("[\u0610-\u061a\u064b-\u0652\u0655-\u065f\u0670\u06d6-\u06ed]")
+
+# Collapse meaningless repeated punctuation; keep a single semantic mark.
+# Ellipsis handled separately so "..." stays three dots.
+_REPEATED_PUNCT_RE = re.compile(r"([؟!!?,،؛;:])\1+")
+_ELLIPSIS_DOTS_RE = re.compile(r"\.{4,}")
 
 _LETTER_CATEGORY_PREFIX = "L"
 
@@ -62,11 +65,12 @@ def normalize_persian_text(text: str) -> str:
     5. Arabic ي/ى/ك → Persian ی/ک
     6. Persian / Arabic-Indic digits → Latin
     7. Quotation / punctuation unification
-    8. ZWNJ normalization (never drop letter–ZWNJ–letter half-spaces)
-    9. Line-ending normalization (``\\r\\n`` / ``\\r`` → ``\\n``)
-    10. Unicode space artifacts → ordinary space
-    11. Control-char strip (keep ``\\n``; tabs collapse in whitespace pass)
-    12. Whitespace normalization (preserve blank lines)
+    8. Collapse meaningless repeated punctuation (preserve semantic marks)
+    9. ZWNJ normalization (never drop letter–ZWNJ–letter half-spaces)
+    10. Line-ending normalization (``\\r\\n`` / ``\\r`` → ``\\n``)
+    11. Unicode space artifacts → ordinary space
+    12. Control-char strip (keep ``\\n``; tabs collapse in whitespace pass)
+    13. Whitespace normalization (preserve blank lines)
     """
     normalized = unicodedata.normalize("NFC", text)
     normalized = _remove_invisible_unicode(normalized)
@@ -79,6 +83,7 @@ def normalize_persian_text(text: str) -> str:
     )
     normalized = normalized.translate(_DIGIT_TRANSLATION)
     normalized = _normalize_punctuation(normalized)
+    normalized = _collapse_repeated_punctuation(normalized)
     normalized = _normalize_zwnj(normalized)
     # Convert legacy line endings before Cc stripping removes bare ``\r``.
     normalized = normalized.replace("\r\n", "\n").replace("\r", "\n")
@@ -115,6 +120,13 @@ def _normalize_punctuation(text: str) -> str:
         .replace("\u2026", "...")  # …
     )
     return normalized
+
+
+def _collapse_repeated_punctuation(text: str) -> str:
+    """Drop noise runs like ``!!!`` / ``؟؟``; keep one mark and ``...`` ellipsis."""
+    collapsed = _REPEATED_PUNCT_RE.sub(r"\1", text)
+    collapsed = _ELLIPSIS_DOTS_RE.sub("...", collapsed)
+    return collapsed
 
 
 def _is_letter(char: str) -> bool:

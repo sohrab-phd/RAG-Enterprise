@@ -22,6 +22,12 @@ def evaluate_retrieval_by_cohort(
     latencies = [
         item.retrieval_latency_ms for item in results if item.retrieval_latency_ms is not None
     ]
+    scores = [
+        score
+        for item in results
+        if item.eligible_for_measured_retrieval
+        for score in (hit.score for hit in item.retrieved)
+    ]
     return {
         EvaluationCohort.BASELINE.value: _eval_cohort(
             [
@@ -46,6 +52,7 @@ def evaluate_retrieval_by_cohort(
             1 for item in results if not item.eligible_for_measured_retrieval
         ),
         "avg_retrieval_latency_ms": (sum(latencies) / len(latencies) if latencies else None),
+        "score_histogram_all_measured": _simple_histogram(scores),
         "definitions": {
             "hit_at_k": MetricTrust.MEASURED.value,
             "recall_at_k": MetricTrust.MEASURED.value,
@@ -53,6 +60,17 @@ def evaluate_retrieval_by_cohort(
             "mrr": MetricTrust.MEASURED.value,
         },
     }
+
+
+def _simple_histogram(scores: list[float], *, bin_width: float = 0.05) -> dict[str, int]:
+    from collections import Counter
+
+    counts: Counter[str] = Counter()
+    for score in scores:
+        start = int(score / bin_width) * bin_width
+        end = start + bin_width
+        counts[f"{start:.2f}-{end:.2f}"] += 1
+    return dict(sorted(counts.items()))
 
 
 def _eval_cohort(
@@ -75,12 +93,16 @@ def _eval_cohort(
         )
     aggregated = aggregate_ir(rows)
     scores = [item.avg_retrieval_score for item in results if item.avg_retrieval_score is not None]
+    successes = sum(1 for item in results if (item.hit_at_k or 0.0) >= 1.0)
+    failures = sum(1 for item in results if item.hit_at_k is not None and item.hit_at_k < 1.0)
     return {
         "cohort": cohort.value,
         "top_k": top_k,
         "trust": MetricTrust.MEASURED.value,
         **aggregated,
         "avg_retrieval_score": (sum(scores) / len(scores) if scores else None),
+        "successful_queries": successes,
+        "failed_queries": failures,
         "correct_document_rate": (
             sum(1 for item in results if item.correct_document) / len(results) if results else None
         ),

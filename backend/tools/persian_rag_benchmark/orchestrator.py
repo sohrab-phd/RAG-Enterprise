@@ -18,6 +18,7 @@ from tools.persian_rag_benchmark.diagnostics.embeddings import diagnose_embeddin
 from tools.persian_rag_benchmark.diagnostics.generation import evaluate_generation_by_cohort
 from tools.persian_rag_benchmark.diagnostics.language import evaluate_language
 from tools.persian_rag_benchmark.diagnostics.retrieval import evaluate_retrieval_by_cohort
+from tools.persian_rag_benchmark.diagnostics.retrieval_detail import build_retrieval_detail
 from tools.persian_rag_benchmark.diagnostics.root_cause import assign_root_causes
 from tools.persian_rag_benchmark.ground_truth import generate_ground_truth
 from tools.persian_rag_benchmark.models import GroundTruthQuestion, QuestionRunResult
@@ -101,6 +102,11 @@ async def run_benchmark(config: BenchmarkConfig) -> dict[str, Any]:
             if config.include_embedding_diagnostics
             else {"skipped": True}
         )
+        retrieval_detail = build_retrieval_detail(
+            results,
+            configured_top_k=config.top_k,
+            configured_min_evidence_score=float(container.settings.generation_min_evidence_score),
+        )
 
         report = assemble_report(
             run_id=run_id,
@@ -121,6 +127,9 @@ async def run_benchmark(config: BenchmarkConfig) -> dict[str, Any]:
                 "seed": config.seed,
                 "embedding_backend": container.settings.embedding_backend,
                 "llm_backend": container.settings.llm_backend,
+                "generation_min_evidence_score": float(
+                    container.settings.generation_min_evidence_score
+                ),
             },
             results=results,
             retrieval_by_cohort=retrieval_by_cohort,
@@ -128,6 +137,7 @@ async def run_benchmark(config: BenchmarkConfig) -> dict[str, Any]:
             language_health=language_health,
             chunk_health=chunk_health,
             embedding_health=embedding_health,
+            retrieval_detail=retrieval_detail,
             per_document=_per_document_stats(results),
             notes=notes,
         )
@@ -141,6 +151,11 @@ async def run_benchmark(config: BenchmarkConfig) -> dict[str, Any]:
             "question_count": len(results),
             "base_question_count": len(base_questions),
             "chunk_count": len(chunks),
+            "recommended_min_evidence_score": retrieval_detail.get(
+                "recommended_min_evidence_score"
+            ),
+            "recommended_top_k": retrieval_detail.get("recommended_top_k"),
+            "false_abstain_count": (retrieval_detail.get("false_abstains") or {}).get("count"),
             "notes": notes,
         }
 

@@ -81,7 +81,9 @@ def _hypotheses(result: QuestionRunResult) -> list[RcaFinding]:
                 confidence=0.45 if result.cohort == EvaluationCohort.ROBUSTNESS else 0.35,
                 evidence=[
                     f"Surface issues on question text: {issues}.",
-                    "Production retrieve uses raw query_text (no normalize_persian_text).",
+                    "Check whether query_text reached RetrievalService before "
+                    "canonical normalize_persian_text (documents and queries share "
+                    "the same pipeline before embed_query).",
                 ],
             )
         )
@@ -110,13 +112,29 @@ def _hypotheses(result: QuestionRunResult) -> list[RcaFinding]:
                 )
             )
         if result.abstained and result.gold_answer:
+            max_score = max((hit.score for hit in result.retrieved), default=0.0)
+            gold_hit = next(
+                (hit for hit in result.retrieved if hit.chunk_id == result.expected_chunk_id),
+                None,
+            )
+            false_abstain = (result.hit_at_k or 0.0) >= 1.0
             findings.append(
                 RcaFinding(
-                    likely_root_cause="LIKELY_ABSTENTION_POLICY",
-                    confidence=0.7,
+                    likely_root_cause=(
+                        "FALSE_ABSTAIN_EVIDENCE_THRESHOLD"
+                        if false_abstain
+                        else "LIKELY_ABSTENTION_POLICY"
+                    ),
+                    confidence=0.85 if false_abstain else 0.7,
                     evidence=[
                         f"generation_status={result.generation_status}",
                         "Gold answer expected but GenerationService abstained.",
+                        f"max_retrieval_score={max_score:.4f}",
+                        (
+                            f"gold_chunk_score={gold_hit.score:.4f} rank={gold_hit.rank}"
+                            if gold_hit is not None
+                            else "gold chunk missing from top-k"
+                        ),
                     ],
                 )
             )

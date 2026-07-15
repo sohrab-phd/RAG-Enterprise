@@ -146,6 +146,7 @@ def assemble_report(
     embedding_health: dict[str, Any],
     per_document: list[dict[str, Any]],
     notes: list[str],
+    retrieval_detail: dict[str, Any] | None = None,
 ) -> BenchmarkReport:
     baseline_ret = dict(retrieval_by_cohort.get(EvaluationCohort.BASELINE.value) or {})
     robustness_ret = dict(retrieval_by_cohort.get(EvaluationCohort.ROBUSTNESS.value) or {})
@@ -192,6 +193,7 @@ def assemble_report(
         persian_language_health=language_health,
         chunk_health=chunk_health,
         embedding_health=embedding_health,
+        retrieval_detail=retrieval_detail or {},
         per_document=per_document,
         questions=results,
         notes=notes,

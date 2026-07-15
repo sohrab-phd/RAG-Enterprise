@@ -237,6 +237,7 @@ class BenchmarkReport(BaseModel):
     persian_language_health: dict[str, Any]
     chunk_health: dict[str, Any]
     embedding_health: dict[str, Any]
+    retrieval_detail: dict[str, Any] = Field(default_factory=dict)
     per_document: list[dict[str, Any]]
     questions: list[QuestionRunResult]
     notes: list[str] = Field(default_factory=list)

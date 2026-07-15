@@ -15,6 +15,7 @@ from rag_enterprise.indexing.repositories import EmbeddingRepository
 from rag_enterprise.knowledge.enums import KnowledgeBaseStatus
 from rag_enterprise.knowledge.repositories.knowledge_base import KnowledgeBaseRepository
 from rag_enterprise.knowledge.repositories.scope import TenantScope
+from rag_enterprise.processing.normalization import normalize_persian_text
 from rag_enterprise.retrieval.exceptions import (
     ForbiddenRetrievalError,
     InvalidQueryError,
@@ -50,9 +51,10 @@ class RetrievalService:
         self._search_timeout_seconds = search_timeout_seconds
 
     async def retrieve(self, request: SearchRequest) -> SearchResponse:
-        """Run authorization → embed query → filter → cosine top-K."""
+        """Run authorization → normalize → embed query → filter → cosine top-K."""
         started = time.perf_counter()
-        query_text = request.query_text.strip()
+        # Same canonical pipeline as document processing (Feature 002 / RC2.1).
+        query_text = normalize_persian_text(request.query_text).strip()
         if not query_text:
             raise InvalidQueryError()
 

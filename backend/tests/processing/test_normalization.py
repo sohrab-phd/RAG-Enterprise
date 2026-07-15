@@ -96,6 +96,12 @@ def test_persian_punctuation_kept_and_fullwidth_mapped() -> None:
     assert normalize_persian_text(raw) == "آیا درست است؟ بله، درست؛"
 
 
+def test_collapses_repeated_punctuation_keeps_ellipsis() -> None:
+    assert normalize_persian_text("واقعا!!! درست؟؟؟") == "واقعا! درست؟"
+    assert normalize_persian_text("صبر.... بعد") == "صبر... بعد"
+    assert normalize_persian_text("لیست،، مورد") == "لیست، مورد"
+
+
 def test_persian_guillemets_preserved() -> None:
     assert normalize_persian_text("«نقل قول»") == "«نقل قول»"
 
