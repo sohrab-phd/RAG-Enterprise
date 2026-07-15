@@ -1,10 +1,10 @@
-"""Embedding diagnostics for Persian semantic search."""
+"""Enhanced embedding vector diagnostics for Persian RAG."""
 
 from __future__ import annotations
 
 import math
 from collections import defaultdict
-from statistics import mean
+from statistics import mean, pstdev
 
 from rag_enterprise.application.interfaces.embedding import EmbeddingProvider
 from rag_enterprise.core.config.settings import Settings
@@ -17,6 +17,7 @@ async def diagnose_embeddings(
     settings: Settings,
     embedding_provider: EmbeddingProvider | None,
     sample_limit: int = 40,
+    corpus_texts: list[str] | None = None,
 ) -> dict[str, object]:
     scores: list[float] = []
     for result in results:
@@ -43,11 +44,43 @@ async def diagnose_embeddings(
 
     nearest: list[dict[str, object]] = []
     duplicate_rate: float | None = None
+    norm_stats: dict[str, float | None] = {
+        "mean": None,
+        "stdev": None,
+        "min": None,
+        "max": None,
+    }
+    outlier_count = 0
+    storage_bytes_estimate: int | None = None
+    query_vectors: list[list[float]] = []
     if embedding_provider is not None and results:
         texts = [item.normalized_question for item in results[:sample_limit]]
-        vectors = await embedding_provider.embed_texts(texts)
-        nearest = _nearest_pairs(texts, vectors, limit=10)
-        duplicate_rate = _duplicate_vector_rate(vectors)
+        query_vectors = await embedding_provider.embed_texts(texts)
+        nearest = _nearest_pairs(texts, query_vectors, limit=10)
+        duplicate_rate = _duplicate_vector_rate(query_vectors)
+        norms = [_l2_norm(vector) for vector in query_vectors]
+        if norms:
+            norm_stats = {
+                "mean": mean(norms),
+                "stdev": pstdev(norms) if len(norms) > 1 else 0.0,
+                "min": min(norms),
+                "max": max(norms),
+            }
+            threshold = (norm_stats["mean"] or 0.0) + 3 * (norm_stats["stdev"] or 0.0)
+            outlier_count = sum(1 for value in norms if value > threshold or value < 0.1)
+        storage_bytes_estimate = (
+            len(query_vectors) * embedding_provider.dimensions * 4 if query_vectors else None
+        )
+
+    corpus_duplicate_rate: float | None = None
+    if embedding_provider is not None and corpus_texts:
+        sample = corpus_texts[: min(len(corpus_texts), sample_limit)]
+        corpus_vectors = await embedding_provider.embed_texts(sample)
+        corpus_duplicate_rate = _duplicate_vector_rate(corpus_vectors)
+        if storage_bytes_estimate is None:
+            storage_bytes_estimate = len(corpus_vectors) * embedding_provider.dimensions * 4
+
+    persian_surface = _persian_surface_analysis(results)
 
     return {
         "embedding_backend": settings.embedding_backend,
@@ -56,12 +89,39 @@ async def diagnose_embeddings(
         "score_mean": mean(scores) if scores else None,
         "score_min": min(scores) if scores else None,
         "score_max": max(scores) if scores else None,
+        "cosine_similarity_distribution": histogram,
         "similarity_histogram": histogram,
+        "vector_norm_distribution": norm_stats,
+        "outlier_vector_count": outlier_count,
         "duplicate_vector_rate": duplicate_rate,
+        "corpus_duplicate_vector_rate": corpus_duplicate_rate,
+        "storage_bytes_estimate_sample": storage_bytes_estimate,
         "nearest_neighbours": nearest,
         "robustness_top_chunk_instability": instability[:20],
         "instability_rate": (len(instability) / len(parent_groups) if parent_groups else None),
+        "persian_surface": persian_surface,
+        "query_vector_sample_count": len(query_vectors),
     }
+
+
+def _persian_surface_analysis(results: list[QuestionRunResult]) -> dict[str, object]:
+    """Summarize robustness Hit rates for Persian surface variants."""
+    by_kind: dict[str, list[float]] = defaultdict(list)
+    for result in results:
+        if result.hit_at_k is None:
+            continue
+        by_kind[result.robustness_kind].append(float(result.hit_at_k))
+    return {
+        kind: {
+            "n": len(values),
+            "hit_at_k_mean": mean(values) if values else None,
+        }
+        for kind, values in sorted(by_kind.items())
+    }
+
+
+def _l2_norm(vector: list[float]) -> float:
+    return math.sqrt(sum(value * value for value in vector)) or 0.0
 
 
 def _histogram(scores: list[float], *, buckets: int = 10) -> list[dict[str, object]]:

@@ -33,6 +33,11 @@ dev = [
     "mypy>=1.13.0",
     "aiosqlite>=0.20.0",
 ]
+embeddings = [
+    "einops>=0.8.2",
+    "sentence-transformers>=3.0.0",
+    "torch>=2.2.0",
+]
 
 [build-system]
 requires = ["hatchling"]
@@ -91,7 +96,18 @@ module = ["rag_enterprise.knowledge.api.routes"]
 disable_error_code = ["var-annotated"]
 
 [[tool.mypy.overrides]]
-module = ["fitz", "bs4", "docx", "lingua", "FlagEmbedding", "pgvector", "pgvector.*"]
+module = [
+    "fitz",
+    "bs4",
+    "docx",
+    "lingua",
+    "FlagEmbedding",
+    "sentence_transformers",
+    "sentence_transformers.*",
+    "torch",
+    "pgvector",
+    "pgvector.*",
+]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

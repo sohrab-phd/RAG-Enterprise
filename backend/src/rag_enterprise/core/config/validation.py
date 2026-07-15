@@ -16,7 +16,7 @@ from rag_enterprise.core.config.settings import Settings
 VALID_LOG_LEVELS = frozenset({"CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "NOTSET"})
 VALID_APP_ENVS = frozenset({"development", "staging", "production", "test"})
 VALID_LLM_BACKENDS = frozenset({"echo", "http"})
-VALID_EMBEDDING_BACKENDS = frozenset({"deterministic", "flag"})
+VALID_EMBEDDING_BACKENDS = frozenset({"deterministic", "flag", "sentence_transformers"})
 
 
 @dataclass(frozen=True)

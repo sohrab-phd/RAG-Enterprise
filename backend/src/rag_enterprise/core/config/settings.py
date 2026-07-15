@@ -53,7 +53,7 @@ class Settings(BaseSettings):
     redis_url: RedisDsn | None = None
 
     # Embeddings / retrieval
-    embedding_backend: Literal["deterministic", "flag"] = Field(
+    embedding_backend: Literal["deterministic", "flag", "sentence_transformers"] = Field(
         default="deterministic",
         validation_alias="EMBEDDING_BACKEND",
     )
