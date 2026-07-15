@@ -7,7 +7,7 @@ import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from sqlalchemy import Select, select, update
+from sqlalchemy import Float, Select, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from rag_enterprise.db.repositories.base import SQLAlchemyRepository
@@ -198,8 +198,10 @@ class EmbeddingRepository(SQLAlchemyRepository[Embedding]):
         document_ids: Sequence[uuid.UUID] | None,
         language: str | None,
     ) -> list[VectorHit]:
-        distance = Embedding.vector.op("<=>")(query_vector)
-        score_expr = (1 - distance).label("score")
+        # Keep distance as Float only. Do not compute `1 - distance` in SQL —
+        # SQLAlchemy otherwise types the literal `1` as EmbeddingVector and fails
+        # bind processing (chat/retrieve 500: TypeError int has no len()).
+        distance = Embedding.vector.op("<=>", return_type=Float())(query_vector)
         statement = (
             self._filtered_join(
                 organization_id=organization_id,
@@ -208,13 +210,14 @@ class EmbeddingRepository(SQLAlchemyRepository[Embedding]):
                 document_ids=document_ids,
                 language=language,
             )
-            .add_columns(score_expr)
+            .add_columns(distance.label("distance"))
             .order_by(distance.asc(), Document.id.asc(), Chunk.sequence_number.asc())
             .limit(top_k)
         )
         rows = (await self._session.execute(statement)).all()
         hits: list[VectorHit] = []
-        for embedding, chunk, document, score in rows:
+        for embedding, chunk, document, distance_value in rows:
+            score = 1.0 - float(distance_value)
             hits.append(
                 VectorHit(
                     embedding_id=embedding.id,
@@ -222,7 +225,7 @@ class EmbeddingRepository(SQLAlchemyRepository[Embedding]):
                     document_id=document.id,
                     document_version_id=chunk.document_version_id,
                     knowledge_base_id=chunk.knowledge_base_id,
-                    score=max(0.0, min(1.0, float(score))),
+                    score=max(0.0, min(1.0, score)),
                     text=chunk.text,
                     chunk_index=chunk.sequence_number,
                     start_char=chunk.start_offset,

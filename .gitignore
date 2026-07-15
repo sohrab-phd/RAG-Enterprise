@@ -86,3 +86,4 @@ storage/
 eval-artifacts/
 backend/storage/
 backend/eval-artifacts/
+backend/benchmark-artifacts/

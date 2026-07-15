@@ -28,6 +28,10 @@ class EmbeddingVector(TypeDecorator[list[float]]):
     def process_bind_param(self, value: list[float] | None, dialect: Dialect) -> Any:
         if value is None:
             return None
+        if not isinstance(value, (list, tuple)):
+            raise TypeError(
+                f"EmbeddingVector expects a sequence of floats, got {type(value).__name__}"
+            )
         if len(value) != self.dimensions:
             raise ValueError(f"Expected vector length {self.dimensions}, got {len(value)}")
         return list(value)

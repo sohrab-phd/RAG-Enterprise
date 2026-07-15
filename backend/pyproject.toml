@@ -54,7 +54,7 @@ dev = [
 [tool.ruff]
 target-version = "py312"
 line-length = 100
-src = ["src", "tests"]
+src = ["src", "tests", "tools"]
 
 [tool.ruff.lint]
 select = [
@@ -68,8 +68,11 @@ select = [
 ]
 ignore = []
 
+[tool.ruff.lint.per-file-ignores]
+"tools/persian_rag_benchmark/reports.py" = ["E501"]
+
 [tool.ruff.lint.isort]
-known-first-party = ["rag_enterprise"]
+known-first-party = ["rag_enterprise", "tools"]
 
 [tool.mypy]
 python_version = "3.12"
