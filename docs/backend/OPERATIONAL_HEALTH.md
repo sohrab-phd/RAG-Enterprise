@@ -39,8 +39,10 @@ Checks (bounded to ~2s each):
 | `evaluation_storage` | `EVALUATION_STORAGE_ROOT` is a writable directory |
 | `upload_storage` | local filesystem `put` → `get` → `delete` probe ([LOCAL_FILE_STORAGE.md](LOCAL_FILE_STORAGE.md)) |
 | `llm` | Only when `LLM_BACKEND=local`: Ollama reachable, models, selected model, generation ping ([OLLAMA.md](OLLAMA.md)) |
+| `embedding` | Embedding provider health: loaded model + dimensions |
+| `embedding_index` | Stored vectors align with the live provider (re-index required on mismatch) |
 
-Does **not** call embedding providers. Local LLM probes run only for `LLM_BACKEND=local`.
+Does **not** invent embedding backends. Local LLM probes run only for `LLM_BACKEND=local`.
 
 ### `/system`
 
@@ -49,6 +51,8 @@ Returns configured inventory (never invokes models):
 - `version`, `environment`
 - provider names + modes (`llm`: `local|api|mock` with provider `ollama|openai|echo`; embeddings:
   `deterministic|flag|sentence_transformers`)
+- dedicated `embedding` object: `backend`, `provider`, `model`, `dimensions`,
+  index alignment / reindex flags
 - dedicated `llm` object: `backend`, `provider`, `model`, `selected_model`,
   `installed_models`, `timeout_seconds`, `ollama_version`, `selection_mode`, `reachability`
 - `GET /system/models` developer catalog for installed / selected models

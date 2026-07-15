@@ -61,9 +61,13 @@ class SystemProviderDTO(BaseModel):
     backend: str | None = None
     provider: str | None = None
     model: str | None = None
+    dimensions: int | None = None
     timeout_seconds: float | None = None
     reachability: str | None = None
     latency_ms: float | None = None
+    loaded: bool | None = None
+    index_compatible: bool | None = None
+    reindex_required: bool | None = None
 
 
 class SystemLlmDTO(BaseModel):
@@ -80,6 +84,23 @@ class SystemLlmDTO(BaseModel):
     ollama_version: str | None = None
     selection_mode: str | None = None
     reachability: str | None = None
+
+
+class SystemEmbeddingDTO(BaseModel):
+    """Embedding execution configuration exposed on /system."""
+
+    model_config = ConfigDict(frozen=True)
+
+    backend: str
+    provider: str
+    model: str
+    dimensions: int
+    loaded: bool | None = None
+    index_compatible: bool | None = None
+    reindex_required: bool | None = None
+    indexed_model_keys: list[str] = Field(default_factory=list)
+    indexed_dimensions: list[int] = Field(default_factory=list)
+    detail: str | None = None
 
 
 class SystemModelsCatalogDTO(BaseModel):
@@ -127,6 +148,7 @@ class SystemResponse(BaseModel):
     environment: str
     providers: dict[str, SystemProviderDTO]
     llm: SystemLlmDTO
+    embedding: SystemEmbeddingDTO
     models: SystemModelsDTO
     counts: SystemCountsDTO
     configuration_validated: bool
@@ -190,6 +212,7 @@ async def system(settings: SettingsDep, response: Response) -> SystemResponse:
     models_raw = inventory["models"]
     counts_raw = inventory["counts"]
     llm_raw = inventory["llm"]
+    embedding_raw = inventory["embedding"]
     return SystemResponse(
         version=str(inventory["version"]),
         environment=str(inventory["environment"]),
@@ -200,6 +223,9 @@ async def system(settings: SettingsDep, response: Response) -> SystemResponse:
                 backend=(str(value["backend"]) if value.get("backend") is not None else None),
                 provider=(str(value["provider"]) if value.get("provider") is not None else None),
                 model=(str(value["model"]) if value.get("model") is not None else None),
+                dimensions=(
+                    int(value["dimensions"]) if value.get("dimensions") is not None else None
+                ),
                 timeout_seconds=(
                     float(value["timeout_seconds"])
                     if value.get("timeout_seconds") is not None
@@ -210,6 +236,17 @@ async def system(settings: SettingsDep, response: Response) -> SystemResponse:
                 ),
                 latency_ms=(
                     float(value["latency_ms"]) if value.get("latency_ms") is not None else None
+                ),
+                loaded=(bool(value["loaded"]) if value.get("loaded") is not None else None),
+                index_compatible=(
+                    bool(value["index_compatible"])
+                    if value.get("index_compatible") is not None
+                    else None
+                ),
+                reindex_required=(
+                    bool(value["reindex_required"])
+                    if value.get("reindex_required") is not None
+                    else None
                 ),
             )
             for key, value in providers_raw.items()
@@ -231,6 +268,34 @@ async def system(settings: SettingsDep, response: Response) -> SystemResponse:
             ),
             reachability=(
                 str(llm_raw["reachability"]) if llm_raw.get("reachability") is not None else None
+            ),
+        ),
+        embedding=SystemEmbeddingDTO(
+            backend=str(embedding_raw["backend"]),
+            provider=str(embedding_raw["provider"]),
+            model=str(embedding_raw["model"]),
+            dimensions=int(embedding_raw["dimensions"]),
+            loaded=(
+                bool(embedding_raw["loaded"]) if embedding_raw.get("loaded") is not None else None
+            ),
+            index_compatible=(
+                bool(embedding_raw["index_compatible"])
+                if embedding_raw.get("index_compatible") is not None
+                else None
+            ),
+            reindex_required=(
+                bool(embedding_raw["reindex_required"])
+                if embedding_raw.get("reindex_required") is not None
+                else None
+            ),
+            indexed_model_keys=[
+                str(item) for item in (embedding_raw.get("indexed_model_keys") or [])
+            ],
+            indexed_dimensions=[
+                int(item) for item in (embedding_raw.get("indexed_dimensions") or [])
+            ],
+            detail=(
+                str(embedding_raw["detail"]) if embedding_raw.get("detail") is not None else None
             ),
         ),
         models=SystemModelsDTO(

@@ -71,9 +71,9 @@ class Settings(BaseSettings):
     redis_port: int = 6379
     redis_url: RedisDsn | None = None
 
-    # Embeddings / retrieval
+    # Embeddings / retrieval — production default matches RC2.3–RC2.5 benchmarks
     embedding_backend: Literal["deterministic", "flag", "sentence_transformers"] = Field(
-        default="deterministic",
+        default="sentence_transformers",
         validation_alias="EMBEDDING_BACKEND",
     )
     embedding_model_key: str = Field(

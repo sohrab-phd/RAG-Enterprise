@@ -23,7 +23,11 @@ from rag_enterprise.evaluation.service import EvaluationService
 from rag_enterprise.generation.prompt_builder import PromptBuilder, PromptBuilderConfig
 from rag_enterprise.generation.providers import OllamaStartupError, create_llm_provider
 from rag_enterprise.generation.service import GenerationService
-from rag_enterprise.indexing.providers import create_embedding_provider
+from rag_enterprise.indexing.providers import (
+    check_index_embedding_alignment,
+    create_embedding_provider,
+    emit_embedding_startup_log,
+)
 from rag_enterprise.indexing.service import IndexingService
 from rag_enterprise.knowledge.infrastructure.filesystem import FileSystemStorage
 from rag_enterprise.knowledge.registration import register_knowledge_handlers
@@ -51,6 +55,7 @@ class AppContainer:
     evaluation_service: EvaluationService | None = None
     command_dispatcher: CommandDispatcher = field(default_factory=CommandDispatcher)
     query_dispatcher: QueryDispatcher = field(default_factory=QueryDispatcher)
+    embedding_index_alignment: dict[str, object] | None = None
     _initialized: bool = field(default=False, repr=False)
 
     @property
@@ -67,6 +72,7 @@ class AppContainer:
         )
         self.file_storage = FileSystemStorage(self.settings.file_storage_root)
         self.embedding_provider = create_embedding_provider(self.settings)
+        emit_embedding_startup_log(self.settings, self.embedding_provider)
         try:
             self.llm_provider = await create_llm_provider(self.settings)
         except OllamaStartupError:
@@ -117,6 +123,23 @@ class AppContainer:
                 generation_service=self.generation_service,
                 storage_root=self.settings.evaluation_storage_root,
             )
+            # Soft check only — tables may not exist yet (migrations / test fixtures).
+            # Fresh alignment is computed again in /ready and /system.
+            try:
+                self.embedding_index_alignment = await check_index_embedding_alignment(
+                    self.session_factory,
+                    self.embedding_provider,
+                    self.settings,
+                )
+            except Exception as exc:  # noqa: BLE001 — defer hard failure to readiness
+                self.embedding_index_alignment = {
+                    "compatible": None,
+                    "reindex_required": False,
+                    "indexed_model_keys": [],
+                    "indexed_dimensions": [],
+                    "detail": f"index alignment deferred: {exc}",
+                    "sample_cosine": None,
+                }
         self._initialized = True
 
     async def shutdown(self) -> None:

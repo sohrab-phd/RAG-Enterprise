@@ -36,12 +36,20 @@ class SentenceTransformerEmbeddingProvider:
         self._model: Any | None = None
 
     @property
+    def provider_name(self) -> str:
+        return "sentence_transformers"
+
+    @property
     def model_key(self) -> str:
         return self._model_key
 
     @property
     def dimensions(self) -> int:
         return self._dimensions
+
+    @property
+    def is_loaded(self) -> bool:
+        return self._model is not None
 
     async def embed_texts(self, texts: list[str]) -> list[list[float]]:
         if not texts:

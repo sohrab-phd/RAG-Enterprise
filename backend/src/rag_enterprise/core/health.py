@@ -23,10 +23,15 @@ from rag_enterprise.core.dependencies.providers import AppContainer, get_contain
 from rag_enterprise.core.runtime import is_configuration_validated
 from rag_enterprise.generation.providers import describe_llm_runtime, probe_llm_provider
 from rag_enterprise.indexing.models import Chunk, Embedding
+from rag_enterprise.indexing.providers import (
+    describe_embedding_runtime,
+    probe_embedding_provider,
+)
 from rag_enterprise.knowledge.models import Document
 
 READY_CHECK_TIMEOUT_SECONDS = 2.0
 LLM_READY_CHECK_TIMEOUT_SECONDS = 30.0
+EMBEDDING_READY_CHECK_TIMEOUT_SECONDS = 180.0
 UPLOAD_PROBE_KEY = "__health__/ready-probe"
 
 
@@ -118,8 +123,39 @@ async def evaluate_readiness(settings: Settings) -> ReadinessReport:
     if settings.llm_backend == "local" and container.llm_provider is not None:
         checks.append(await _check_local_llm(container.llm_provider))
 
+    if container.embedding_provider is not None:
+        checks.append(await _check_embedding_provider(container.embedding_provider))
+        if container.session_factory is not None:
+            alignment = await _refresh_embedding_index_alignment(container)
+            checks.append(_check_embedding_index(alignment))
+
     ready = all(item.ok for item in checks)
     return ReadinessReport(ready=ready, checks=tuple(checks))
+
+
+async def _refresh_embedding_index_alignment(container: AppContainer) -> dict[str, object]:
+    """Re-check DB vectors vs live provider (schema may appear after startup)."""
+    from rag_enterprise.indexing.providers import check_index_embedding_alignment
+
+    assert container.session_factory is not None
+    assert container.embedding_provider is not None
+    try:
+        alignment = await check_index_embedding_alignment(
+            container.session_factory,
+            container.embedding_provider,
+            container.settings,
+        )
+    except Exception as exc:  # noqa: BLE001 — readiness must not crash
+        alignment = {
+            "compatible": False,
+            "reindex_required": True,
+            "indexed_model_keys": [],
+            "indexed_dimensions": [],
+            "detail": f"index alignment check failed: {exc}",
+            "sample_cosine": None,
+        }
+    container.embedding_index_alignment = alignment
+    return alignment
 
 
 async def _check_local_llm(provider: object) -> CheckResult:
@@ -154,6 +190,47 @@ async def _check_local_llm(provider: object) -> CheckResult:
         f"detail={snapshot.get('detail')}"
     )
     return CheckResult(name="llm", ok=ok, detail=detail)
+
+
+async def _check_embedding_provider(provider: object) -> CheckResult:
+    try:
+        snapshot = await asyncio.wait_for(
+            probe_embedding_provider(provider),  # type: ignore[arg-type]
+            timeout=EMBEDDING_READY_CHECK_TIMEOUT_SECONDS,
+        )
+    except TimeoutError:
+        return CheckResult(
+            name="embedding",
+            ok=False,
+            detail="embedding readiness probe timed out",
+        )
+    except Exception as exc:  # noqa: BLE001 — surface as not-ready, never crash probe
+        return CheckResult(name="embedding", ok=False, detail=f"embedding probe error: {exc}")
+
+    ok = bool(snapshot.get("ok")) and snapshot.get("detail") == "ok"
+    dims_match = snapshot.get("model_dimensions") == snapshot.get("vector_dimensions")
+    ok = ok and bool(dims_match)
+    detail = (
+        f"provider={snapshot.get('backend_provider')} "
+        f"loaded_model={snapshot.get('loaded_model')} "
+        f"model_dimensions={snapshot.get('model_dimensions')} "
+        f"vector_dimensions={snapshot.get('vector_dimensions')} "
+        f"loaded={snapshot.get('loaded')} "
+        f"detail={snapshot.get('detail')}"
+    )
+    return CheckResult(name="embedding", ok=ok, detail=detail)
+
+
+def _check_embedding_index(alignment: dict[str, object]) -> CheckResult:
+    """Warn operators when stored vectors were not produced by the live provider."""
+    reindex_required = bool(alignment.get("reindex_required"))
+    compatible = alignment.get("compatible")
+    detail = str(alignment.get("detail") or "unknown")
+    # Deferred / unknown (compatible is None) is not a hard failure.
+    if compatible is None and not reindex_required:
+        return CheckResult(name="embedding_index", ok=True, detail=detail)
+    ok = compatible is True and not reindex_required
+    return CheckResult(name="embedding_index", ok=ok, detail=detail)
 
 
 def _resolve_container() -> tuple[AppContainer | None, bool, str]:
@@ -286,6 +363,18 @@ async def build_system_inventory(settings: Settings) -> dict[str, Any]:
             evaluation_run_count = 0
 
     llm = describe_llm_runtime(settings, container.llm_provider if container else None)
+    if container is not None and di_ok and container.embedding_provider is not None:
+        if container.session_factory is not None:
+            await _refresh_embedding_index_alignment(container)
+    embedding = describe_embedding_runtime(
+        settings,
+        container.embedding_provider if container else None,
+        index_alignment=(
+            container.embedding_index_alignment
+            if container is not None and container.embedding_index_alignment is not None
+            else None
+        ),
+    )
     return {
         "version": __version__,
         "environment": settings.app_env,
@@ -301,8 +390,15 @@ async def build_system_inventory(settings: Settings) -> dict[str, Any]:
                 "latency_ms": llm.latency_ms,
             },
             "embedding": {
-                "name": "bge_m3",
-                "mode": settings.embedding_backend,
+                "name": embedding.provider,
+                "mode": embedding.backend,
+                "backend": embedding.backend,
+                "provider": embedding.provider,
+                "model": embedding.model,
+                "dimensions": embedding.dimensions,
+                "loaded": embedding.loaded,
+                "index_compatible": embedding.index_compatible,
+                "reindex_required": embedding.reindex_required,
             },
         },
         "models": {
@@ -321,6 +417,18 @@ async def build_system_inventory(settings: Settings) -> dict[str, Any]:
             "ollama_version": llm.ollama_version,
             "selection_mode": llm.selection_mode,
             "reachability": llm.reachability,
+        },
+        "embedding": {
+            "backend": embedding.backend,
+            "provider": embedding.provider,
+            "model": embedding.model,
+            "dimensions": embedding.dimensions,
+            "loaded": embedding.loaded,
+            "index_compatible": embedding.index_compatible,
+            "reindex_required": embedding.reindex_required,
+            "indexed_model_keys": list(embedding.indexed_model_keys),
+            "indexed_dimensions": list(embedding.indexed_dimensions),
+            "detail": embedding.detail,
         },
         "counts": {
             "documents": document_count,

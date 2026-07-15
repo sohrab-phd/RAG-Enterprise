@@ -35,6 +35,7 @@ async def ready_client(
     monkeypatch.setenv("FILE_STORAGE_ROOT", str(upload_root))
     monkeypatch.setenv("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
     monkeypatch.setenv("LLM_BACKEND", "mock")
+    monkeypatch.setenv("LLM_TIMEOUT_SECONDS", "60")
     monkeypatch.setenv("EMBEDDING_BACKEND", "deterministic")
     monkeypatch.setenv("APP_ENV", "test")
     get_settings.cache_clear()
@@ -98,9 +99,14 @@ async def test_ready_ok_with_lifespan(ready_client: AsyncClient) -> None:
         "database",
         "evaluation_storage",
         "upload_storage",
+        "embedding",
+        "embedding_index",
     }
     upload = next(item for item in payload["checks"] if item["name"] == "upload_storage")
     assert "filesystem" in upload["detail"]
+    embedding = next(item for item in payload["checks"] if item["name"] == "embedding")
+    assert embedding["ok"] is True
+    assert "BAAI/bge-m3" in embedding["detail"] or "loaded_model=" in embedding["detail"]
 
 
 @pytest.mark.asyncio
@@ -121,6 +127,10 @@ async def test_system_inventory(ready_client: AsyncClient) -> None:
     assert payload["llm"]["timeout_seconds"] == 60.0
     assert isinstance(payload["llm"]["installed_models"], list)
     assert payload["providers"]["embedding"]["mode"] == "deterministic"
+    assert payload["embedding"]["backend"] == "deterministic"
+    assert payload["embedding"]["provider"] == "deterministic"
+    assert payload["embedding"]["model"] == "BAAI/bge-m3"
+    assert payload["embedding"]["dimensions"] == 1024
     assert payload["models"]["llm_model_key"]
     assert payload["models"]["embedding_model_key"]
     assert payload["models"]["prompt_template_version"] == "v1"

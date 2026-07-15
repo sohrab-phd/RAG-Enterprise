@@ -35,8 +35,13 @@ Default model: `BAAI/bge-m3` (1024 dimensions).
 
 | `EMBEDDING_BACKEND` | Behavior |
 | --- | --- |
-| `deterministic` (default) | Hash-derived L2-normalized vectors for local/CI |
+| `sentence_transformers` (**default / production**) | `SentenceTransformerEmbeddingProvider` — RC2.3–RC2.5 benchmark parity (`BAAI/bge-m3`, 1024-d) |
+| `deterministic` | Hash-derived L2-normalized vectors for **CI/unit tests only** (explicit; never selected silently) |
 | `flag` | Lazy-loads `FlagEmbedding.BGEM3FlagModel` |
+
+HTTP, indexing, retrieval, generation, and the Persian RAG benchmark all resolve embeddings
+through `create_embedding_provider(settings)` — the same factory. There is no secondary
+path that quietly switches to deterministic.
 
 ## Indexing
 

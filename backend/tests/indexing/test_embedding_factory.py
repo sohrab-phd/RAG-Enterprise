@@ -41,6 +41,18 @@ def test_factory_sentence_transformers_backend() -> None:
     )
     assert isinstance(provider, SentenceTransformerEmbeddingProvider)
     assert provider.model_key == "intfloat/multilingual-e5-large"
+    assert provider.provider_name == "sentence_transformers"
+
+
+def test_factory_deterministic_exposes_provider_name() -> None:
+    provider = create_embedding_provider(
+        _EmbeddingSettings(  # type: ignore[arg-type]
+            embedding_backend="deterministic",
+            embedding_model_key="BAAI/bge-m3",
+        )
+    )
+    assert isinstance(provider, BgeM3EmbeddingProvider)
+    assert provider.provider_name == "deterministic"
 
 
 def test_model_swap_is_settings_only() -> None:

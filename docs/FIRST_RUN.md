@@ -12,8 +12,10 @@ This path uses:
 
 - Local Docker Compose for PostgreSQL (pgvector) and Redis
 - Backend defaults: `LLM_BACKEND=local` (Ollama chat — see [OLLAMA.md](backend/OLLAMA.md)).
-  For a first demo **without** Ollama set `LLM_BACKEND=mock` (deterministic echo stub).
-  Embeddings default to `EMBEDDING_BACKEND=deterministic` (no external model API keys required)
+  Embeddings default to `EMBEDDING_BACKEND=sentence_transformers` with
+  `EMBEDDING_MODEL_KEY=BAAI/bge-m3` (same as RC2.3–RC2.5 benchmarks). For unit tests /
+  offline demos you may set `LLM_BACKEND=mock` and `EMBEDDING_BACKEND=deterministic`
+  explicitly — they are never selected silently.
 - The operator console for Knowledge, Chat, and Evaluation (sidebar links)
 
 ---
@@ -132,7 +134,7 @@ EMBEDDING_BACKEND=deterministic
 GENERATION_MIN_EVIDENCE_SCORE=0.0
 ```
 
-**Local Ollama (recommended for real Persian answers):**
+**Local Ollama + BGE-M3 (recommended — matches RC2.3–RC2.5 benchmarks):**
 
 ```bash
 LLM_BACKEND=local
@@ -140,6 +142,10 @@ LOCAL_PROVIDER=ollama
 OLLAMA_BASE_URL=http://localhost:11434
 LLM_MODEL_KEY=auto
 LLM_TIMEOUT_SECONDS=120
+EMBEDDING_BACKEND=sentence_transformers
+EMBEDDING_MODEL_KEY=BAAI/bge-m3
+EMBEDDING_DIMENSIONS=1024
+GENERATION_MIN_EVIDENCE_SCORE=0.25
 ```
 
 Install Ollama, pull a model (`ollama pull <model>`), then restart the backend.
