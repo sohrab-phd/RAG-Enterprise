@@ -31,10 +31,16 @@ from tools.dev_launcher.docker import (
 from tools.dev_launcher.ports import report_ports
 from tools.dev_launcher.processes import ManagedProcess, spawn
 
+_ANSI_RE = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]|\x1b\][^\x07]*\x07")
 _VITE_LOCAL_RE = re.compile(
-    r"Local:\s*(https?://[^\s]+)",
+    r"Local:\s*(https?://\S+)",
     re.IGNORECASE,
 )
+_VITE_URL_RE = re.compile(r"https?://(?:127\.0\.0\.1|localhost):\d+\S*", re.IGNORECASE)
+
+
+def _strip_ansi(text: str) -> str:
+    return _ANSI_RE.sub("", text)
 
 
 @dataclass
@@ -102,12 +108,30 @@ def _wait_http_ready(url: str, *, timeout: float, label: str) -> float:
     raise RuntimeError(f"Timed out waiting for {label} at {url}")
 
 
+def _normalize_frontend_url(url: str) -> str:
+    return url.rstrip("/").rstrip("\x1b").rstrip("/")
+
+
 def _extract_vite_url(lines: list[str], fallback: str) -> str:
+    """Parse Vite's Local URL, ignoring ANSI color codes in the log stream."""
     for line in reversed(lines):
-        match = _VITE_LOCAL_RE.search(line)
+        cleaned = _strip_ansi(line)
+        match = _VITE_LOCAL_RE.search(cleaned)
         if match:
-            return match.group(1).rstrip("/")
+            return _normalize_frontend_url(match.group(1))
+        if "local:" in cleaned.lower():
+            url_match = _VITE_URL_RE.search(cleaned)
+            if url_match:
+                return _normalize_frontend_url(url_match.group(0))
     return fallback
+
+
+def _probe_http(url: str, *, timeout: float = 2.0) -> bool:
+    try:
+        with urlopen(Request(url, method="GET"), timeout=timeout) as response:
+            return 200 <= int(response.status) < 500
+    except (HTTPError, URLError, TimeoutError, OSError):
+        return False
 
 
 def _wait_for_vite_url(proc: ManagedProcess, *, timeout: float, fallback: str) -> tuple[str, float]:
@@ -120,6 +144,11 @@ def _wait_for_vite_url(proc: ManagedProcess, *, timeout: float, fallback: str) -
             elapsed = time.perf_counter() - started
             console.ok(f"Frontend URL: {url} ({elapsed:.1f}s)")
             return url, elapsed
+        # If Vite printed ready-style noise we missed, accept a live fallback port.
+        if _probe_http(fallback):
+            elapsed = time.perf_counter() - started
+            console.ok(f"Frontend HTTP ready at {fallback} ({elapsed:.1f}s)")
+            return fallback, elapsed
         if proc.poll() is not None:
             raise RuntimeError("Frontend process exited before printing Local URL")
         console.info("Waiting for Vite Local URL...")
