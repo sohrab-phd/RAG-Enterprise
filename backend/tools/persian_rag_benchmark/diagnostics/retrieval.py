@@ -19,6 +19,9 @@ def evaluate_retrieval_by_cohort(
     Measured retrieval metrics include only questions with
     ``eligible_for_measured_retrieval`` (curated external gold).
     """
+    latencies = [
+        item.retrieval_latency_ms for item in results if item.retrieval_latency_ms is not None
+    ]
     return {
         EvaluationCohort.BASELINE.value: _eval_cohort(
             [
@@ -42,6 +45,7 @@ def evaluate_retrieval_by_cohort(
         "excluded_auto_corpus_probe_count": sum(
             1 for item in results if not item.eligible_for_measured_retrieval
         ),
+        "avg_retrieval_latency_ms": (sum(latencies) / len(latencies) if latencies else None),
         "definitions": {
             "hit_at_k": MetricTrust.MEASURED.value,
             "recall_at_k": MetricTrust.MEASURED.value,

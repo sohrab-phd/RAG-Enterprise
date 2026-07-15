@@ -369,6 +369,12 @@ def _render_html(report: BenchmarkReport) -> str:
             "chunks": {
                 "chunk_count": report.chunk_health.get("chunk_count"),
                 "never_retrieved_count": report.chunk_health.get("never_retrieved_count"),
+                "avg_chunk_chars": report.chunk_health.get("avg_chunk_chars"),
+                "avg_chunks_per_document": report.chunk_health.get("avg_chunks_per_document"),
+                "avg_overlap_size": report.chunk_health.get("avg_overlap_size"),
+                "chunk_size_histogram": report.chunk_health.get("chunk_size_histogram"),
+                "overlap_distribution": report.chunk_health.get("overlap_distribution"),
+                "sentence_distribution": report.chunk_health.get("sentence_distribution"),
             },
         },
         ensure_ascii=False,

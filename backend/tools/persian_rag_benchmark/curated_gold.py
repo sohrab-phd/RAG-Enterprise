@@ -127,19 +127,26 @@ def _find_chunk(chunks: list[ChunkSnapshot], needle: str) -> ChunkSnapshot | Non
     cleaned = re.sub(r"\s+", " ", needle).strip()
     if len(cleaned) < 4:
         return None
+    variants = {cleaned, _latin_digits(cleaned)}
     for chunk in chunks:
         hay = re.sub(r"\s+", " ", chunk.text)
-        if cleaned in hay:
+        hay_variants = {hay, _latin_digits(hay)}
+        if any(variant in hay_value for variant in variants for hay_value in hay_variants):
             return chunk
-    # Soft fallback: all tokens present
-    tokens = [tok for tok in cleaned.split() if len(tok) > 1]
+    # Soft fallback: all tokens present (digit-normalized).
+    tokens = [tok for tok in _latin_digits(cleaned).split() if len(tok) > 1]
     if not tokens:
         return None
     for chunk in chunks:
-        hay = chunk.text
+        hay = _latin_digits(chunk.text)
         if all(tok in hay for tok in tokens[:6]):
             return chunk
     return None
+
+
+def _latin_digits(text: str) -> str:
+    table = str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "01234567890123456789")
+    return text.translate(table)
 
 
 def _category_from_tags(tags: object) -> QuestionCategory:
