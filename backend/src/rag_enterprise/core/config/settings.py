@@ -1,12 +1,31 @@
 """Pydantic-based settings with environment variable support."""
 
 from functools import lru_cache
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import Field, RedisDsn, computed_field, model_validator
+from pydantic import BeforeValidator, Field, RedisDsn, computed_field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from rag_enterprise.core.config.database import DatabaseSettings
+
+
+def _coerce_llm_backend(value: object) -> object:
+    """Accept legacy echo/http and map to mock/api before Literal check."""
+    if not isinstance(value, str):
+        return value
+    normalized = value.strip().lower()
+    if normalized == "echo":
+        return "mock"
+    if normalized == "http":
+        return "api"
+    return normalized
+
+
+LlmBackendField = Annotated[
+    Literal["local", "api", "mock"],
+    BeforeValidator(_coerce_llm_backend),
+    Field(default="local", validation_alias="LLM_BACKEND"),
+]
 
 
 class Settings(BaseSettings):
@@ -65,15 +84,32 @@ class Settings(BaseSettings):
     embedding_batch_size: int = Field(default=32, validation_alias="EMBEDDING_BATCH_SIZE")
     retrieval_default_top_k: int = Field(default=8, validation_alias="RETRIEVAL_DEFAULT_TOP_K")
 
-    # LLM / generation
-    llm_backend: Literal["echo", "http"] = Field(
-        default="echo",
-        validation_alias="LLM_BACKEND",
+    # LLM / generation (RC2.6: local | api | mock)
+    llm_backend: LlmBackendField
+    local_provider: Literal["ollama"] = Field(
+        default="ollama",
+        validation_alias="LOCAL_PROVIDER",
     )
-    llm_model_key: str = Field(default="gpt-4o-mini", validation_alias="LLM_MODEL_KEY")
+    api_provider: Literal["openai"] = Field(
+        default="openai",
+        validation_alias="API_PROVIDER",
+    )
+    mock_provider: Literal["echo"] = Field(
+        default="echo",
+        validation_alias="MOCK_PROVIDER",
+    )
+    ollama_base_url: str = Field(
+        default="http://localhost:11434",
+        validation_alias="OLLAMA_BASE_URL",
+    )
+    openai_base_url: str | None = Field(default=None, validation_alias="OPENAI_BASE_URL")
+    openai_api_key: str | None = Field(default=None, validation_alias="OPENAI_API_KEY")
+    # Legacy aliases retained for migration (prefer OPENAI_*).
     llm_base_url: str | None = Field(default=None, validation_alias="LLM_BASE_URL")
     llm_api_key: str | None = Field(default=None, validation_alias="LLM_API_KEY")
+    llm_model_key: str = Field(default="auto", validation_alias="LLM_MODEL_KEY")
     llm_timeout_seconds: float = Field(default=60.0, validation_alias="LLM_TIMEOUT_SECONDS")
+    llm_legacy_backend: str | None = Field(default=None, exclude=True)
     generation_min_evidence_score: float = Field(
         default=0.25,
         validation_alias="GENERATION_MIN_EVIDENCE_SCORE",
@@ -117,6 +153,8 @@ class Settings(BaseSettings):
         if not isinstance(data, dict):
             return data
 
+        data = cls._normalize_llm_settings(data)
+
         if "database" in data and isinstance(data["database"], dict):
             return data
 
@@ -143,6 +181,35 @@ class Settings(BaseSettings):
         )
         return data
 
+    @staticmethod
+    def _normalize_llm_settings(data: dict[str, Any]) -> dict[str, Any]:
+        """Map legacy echo/http and LLM_* API aliases into the RC2.6 shape."""
+        backend_raw = data.get("llm_backend", data.get("LLM_BACKEND"))
+        if isinstance(backend_raw, str):
+            normalized = backend_raw.strip().lower()
+            if normalized == "echo":
+                data["llm_backend"] = "mock"
+                data["llm_legacy_backend"] = "echo"
+            elif normalized == "http":
+                data["llm_backend"] = "api"
+                data["llm_legacy_backend"] = "http"
+            else:
+                data["llm_backend"] = normalized
+
+        openai_base = data.get("openai_base_url", data.get("OPENAI_BASE_URL"))
+        legacy_base = data.get("llm_base_url", data.get("LLM_BASE_URL"))
+        if not (isinstance(openai_base, str) and openai_base.strip()) and isinstance(
+            legacy_base, str
+        ):
+            data["openai_base_url"] = legacy_base
+
+        openai_key = data.get("openai_api_key", data.get("OPENAI_API_KEY"))
+        legacy_key = data.get("llm_api_key", data.get("LLM_API_KEY"))
+        if not (isinstance(openai_key, str) and openai_key.strip()) and isinstance(legacy_key, str):
+            data["openai_api_key"] = legacy_key
+
+        return data
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def is_development(self) -> bool:
@@ -152,6 +219,25 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.app_env == "production"
+
+    @property
+    def llm_provider_name(self) -> str:
+        """Active concrete provider for the selected backend."""
+        if self.llm_backend == "local":
+            return self.local_provider
+        if self.llm_backend == "api":
+            return self.api_provider
+        return self.mock_provider
+
+    @property
+    def resolved_openai_base_url(self) -> str | None:
+        value = (self.openai_base_url or self.llm_base_url or "").strip()
+        return value or None
+
+    @property
+    def resolved_openai_api_key(self) -> str | None:
+        value = (self.openai_api_key or self.llm_api_key or "").strip()
+        return value or None
 
     @property
     def resolved_database_url(self) -> str:

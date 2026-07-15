@@ -16,7 +16,7 @@ Start application
   → Embedding + Indexing (IndexingService)
   → Ask Persian question
   → Retrieve evidence
-  → Generate grounded answer (LLM echo in CI)
+  → Generate grounded answer (LLM mock in CI)
   → Validate citations + evaluation engine
   → Pass
 ```
@@ -35,7 +35,7 @@ From `golden_path.json`:
 
 - **Question:** مرخصی استحقاقی سالانه کارکنان رسمی چند روز کاری است؟
 - **Expected answer (Persian ground truth):** مرخصی استحقاقی سالانه کارکنان رسمی ۲۰ روز کاری است.
-- **Answer pattern (`LLM_BACKEND=echo`):** `Based on the retrieved evidence, here is the answer. [1]`
+- **Answer pattern (`LLM_BACKEND=mock`):** `Based on the retrieved evidence, here is the answer. [1]`
 - **Source must contain:** `۲۰ روز کاری`
 
 ## Assertions
@@ -53,7 +53,7 @@ The scenario passes only when:
 
 | Concern | Setting | Value |
 | --- | --- | --- |
-| LLM | `LLM_BACKEND` | `echo` (no external call) |
+| LLM | `LLM_BACKEND` | `mock` (no external call) |
 | Embedding | `EMBEDDING_BACKEND` | `deterministic` |
 | Evidence gate | `GENERATION_MIN_EVIDENCE_SCORE` | `0.0` (deterministic vectors are not semantic) |
 | Database | `DATABASE_URL` | sqlite+aiosqlite memory |

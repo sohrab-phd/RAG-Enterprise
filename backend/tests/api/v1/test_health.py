@@ -34,7 +34,7 @@ async def ready_client(
     monkeypatch.setenv("EVALUATION_STORAGE_ROOT", str(eval_root))
     monkeypatch.setenv("FILE_STORAGE_ROOT", str(upload_root))
     monkeypatch.setenv("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
-    monkeypatch.setenv("LLM_BACKEND", "echo")
+    monkeypatch.setenv("LLM_BACKEND", "mock")
     monkeypatch.setenv("EMBEDDING_BACKEND", "deterministic")
     monkeypatch.setenv("APP_ENV", "test")
     get_settings.cache_clear()
@@ -110,7 +110,14 @@ async def test_system_inventory(ready_client: AsyncClient) -> None:
     payload = response.json()
     assert payload["version"]
     assert payload["environment"] == "test"
-    assert payload["providers"]["llm"]["mode"] == "echo"
+    assert payload["providers"]["llm"]["mode"] == "mock"
+    assert payload["providers"]["llm"]["backend"] == "mock"
+    assert payload["providers"]["llm"]["provider"] == "echo"
+    assert payload["providers"]["llm"]["reachability"] == "not_checked"
+    assert payload["llm"]["backend"] == "mock"
+    assert payload["llm"]["provider"] == "echo"
+    assert payload["llm"]["model"]
+    assert payload["llm"]["timeout_seconds"] == 60.0
     assert payload["providers"]["embedding"]["mode"] == "deterministic"
     assert payload["models"]["llm_model_key"]
     assert payload["models"]["embedding_model_key"]

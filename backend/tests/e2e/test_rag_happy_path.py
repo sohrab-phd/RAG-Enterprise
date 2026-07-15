@@ -39,7 +39,7 @@ async def e2e_client(
     monkeypatch.setenv("EVALUATION_STORAGE_ROOT", str(eval_root))
     monkeypatch.setenv("FILE_STORAGE_ROOT", str(upload_root))
     monkeypatch.setenv("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
-    monkeypatch.setenv("LLM_BACKEND", "echo")
+    monkeypatch.setenv("LLM_BACKEND", "mock")
     monkeypatch.setenv("EMBEDDING_BACKEND", "deterministic")
     # Deterministic embeddings are not semantic; disable score gate for local e2e.
     monkeypatch.setenv("GENERATION_MIN_EVIDENCE_SCORE", "0.0")

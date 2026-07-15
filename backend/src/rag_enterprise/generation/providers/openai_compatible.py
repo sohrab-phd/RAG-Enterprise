@@ -1,55 +1,44 @@
-"""OpenAI-compatible LLM provider adapter."""
+"""OpenAI-compatible remote LLM provider (API backend)."""
 
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
-from typing import Literal
 
 import httpx
 
 from rag_enterprise.application.interfaces.llm import LLMCompletionRequest
 from rag_enterprise.generation.exceptions import GenerationTimeoutError, ModelUnavailableError
+from rag_enterprise.generation.providers.api import APIProvider
+from rag_enterprise.generation.providers.types import CompletionResult
 
 
-@dataclass(frozen=True)
-class CompletionResult:
-    """Concrete LLM completion response."""
-
-    content: str
-    model_key: str
-
-
-class OpenAICompatibleLLMProvider:
-    """LLMProvider using an OpenAI-compatible chat completions API.
-
-    Modes:
-    - ``echo``: deterministic local response for tests (cites [1] from evidence)
-    - ``http``: POST to ``{base_url}/chat/completions``
-    """
+class OpenAICompatibleProvider(APIProvider):
+    """HTTP chat-completions client for OpenAI-compatible APIs."""
 
     def __init__(
         self,
         *,
-        mode: Literal["echo", "http"] = "echo",
         model_key: str = "gpt-4o-mini",
-        base_url: str | None = None,
+        base_url: str,
         api_key: str | None = None,
         timeout_seconds: float = 60.0,
+        provider_name: str = "openai",
     ) -> None:
-        self._mode = mode
         self._model_key = model_key
-        self._base_url = (base_url or "").rstrip("/")
+        self._base_url = base_url.rstrip("/")
         self._api_key = api_key
         self._timeout_seconds = timeout_seconds
+        self._provider_name = provider_name
+
+    @property
+    def provider_name(self) -> str:
+        return self._provider_name
 
     @property
     def model_key(self) -> str:
         return self._model_key
 
     async def complete(self, request: LLMCompletionRequest) -> CompletionResult:
-        if self._mode == "echo":
-            return CompletionResult(content=self._echo(request), model_key=self._model_key)
         try:
             return await asyncio.wait_for(
                 self._http_complete(request),
@@ -57,16 +46,6 @@ class OpenAICompatibleLLMProvider:
             )
         except TimeoutError as exc:
             raise GenerationTimeoutError() from exc
-
-    def _echo(self, request: LLMCompletionRequest) -> str:
-        user_prompt = request.user_prompt
-        if "ABSTAIN" in (request.system_prompt or "") and "EVIDENCE" not in user_prompt:
-            return "ABSTAIN: insufficient_evidence"
-        # Prefer citing the first evidence marker when present.
-        if "[1]" in user_prompt or "\n[1]" in user_prompt or "] chunk_id=" in user_prompt:
-            # Extract a short snippet after first evidence block if possible.
-            return "Based on the retrieved evidence, here is the answer. [1]"
-        return "ABSTAIN: insufficient_evidence"
 
     async def _http_complete(self, request: LLMCompletionRequest) -> CompletionResult:
         if not self._base_url:
@@ -101,3 +80,7 @@ class OpenAICompatibleLLMProvider:
         if not isinstance(content, str) or not content.strip():
             raise ModelUnavailableError("Empty LLM response")
         return CompletionResult(content=content.strip(), model_key=self._model_key)
+
+
+# Backward-compatible name used by older tests / imports.
+OpenAICompatibleLLMProvider = OpenAICompatibleProvider

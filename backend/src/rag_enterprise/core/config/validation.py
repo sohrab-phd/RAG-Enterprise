@@ -15,7 +15,12 @@ from rag_enterprise.core.config.settings import Settings
 
 VALID_LOG_LEVELS = frozenset({"CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "NOTSET"})
 VALID_APP_ENVS = frozenset({"development", "staging", "production", "test"})
-VALID_LLM_BACKENDS = frozenset({"echo", "http"})
+VALID_LLM_BACKENDS = frozenset({"local", "api", "mock"})
+VALID_LOCAL_PROVIDERS = frozenset({"ollama"})
+VALID_API_PROVIDERS = frozenset({"openai"})
+VALID_MOCK_PROVIDERS = frozenset({"echo"})
+# Legacy aliases accepted by Settings normalization then remapped.
+LEGACY_LLM_BACKENDS = frozenset({"echo", "http"})
 VALID_EMBEDDING_BACKENDS = frozenset({"deterministic", "flag", "sentence_transformers"})
 
 
@@ -197,6 +202,34 @@ def _validate_llm(settings: Settings) -> list[ConfigIssue]:
             )
         )
 
+    if settings.local_provider not in VALID_LOCAL_PROVIDERS:
+        issues.append(
+            ConfigIssue(
+                "LLM",
+                f"LOCAL_PROVIDER must be one of {sorted(VALID_LOCAL_PROVIDERS)} "
+                f"(got {settings.local_provider!r})",
+                field="LOCAL_PROVIDER",
+            )
+        )
+    if settings.api_provider not in VALID_API_PROVIDERS:
+        issues.append(
+            ConfigIssue(
+                "LLM",
+                f"API_PROVIDER must be one of {sorted(VALID_API_PROVIDERS)} "
+                f"(got {settings.api_provider!r})",
+                field="API_PROVIDER",
+            )
+        )
+    if settings.mock_provider not in VALID_MOCK_PROVIDERS:
+        issues.append(
+            ConfigIssue(
+                "LLM",
+                f"MOCK_PROVIDER must be one of {sorted(VALID_MOCK_PROVIDERS)} "
+                f"(got {settings.mock_provider!r})",
+                field="MOCK_PROVIDER",
+            )
+        )
+
     if not settings.llm_model_key.strip():
         issues.append(ConfigIssue("LLM", "model key must be non-empty", field="LLM_MODEL_KEY"))
 
@@ -219,26 +252,35 @@ def _validate_llm(settings: Settings) -> list[ConfigIssue]:
             )
         )
 
-    if backend == "http":
-        api_key = (settings.llm_api_key or "").strip()
+    if backend == "local" and not settings.ollama_base_url.strip():
+        issues.append(
+            ConfigIssue(
+                "LLM",
+                "OLLAMA_BASE_URL is required when LLM_BACKEND=local",
+                field="OLLAMA_BASE_URL",
+            )
+        )
+
+    if backend == "api":
+        api_key = (settings.resolved_openai_api_key or "").strip()
         if not api_key:
             issues.append(
                 ConfigIssue(
                     "LLM",
-                    "API key is required when LLM_BACKEND=http",
-                    field="LLM_API_KEY",
+                    "OPENAI_API_KEY (or legacy LLM_API_KEY) is required when LLM_BACKEND=api",
+                    field="OPENAI_API_KEY",
                 )
             )
-        base_url = (settings.llm_base_url or "").strip()
+        base_url = (settings.resolved_openai_base_url or "").strip()
         if not base_url:
             issues.append(
                 ConfigIssue(
                     "LLM",
-                    "base URL is required when LLM_BACKEND=http",
-                    field="LLM_BASE_URL",
+                    "OPENAI_BASE_URL (or legacy LLM_BASE_URL) is required when LLM_BACKEND=api",
+                    field="OPENAI_BASE_URL",
                 )
             )
-    # echo: API key intentionally optional
+    # mock: credentials intentionally optional
 
     return issues
 

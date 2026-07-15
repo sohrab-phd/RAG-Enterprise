@@ -20,7 +20,7 @@ from rag_enterprise.generation.models import (
     MessageTurn,
 )
 from rag_enterprise.generation.prompt_builder import PromptBuilder
-from rag_enterprise.generation.providers import OpenAICompatibleLLMProvider
+from rag_enterprise.generation.providers import MockProvider
 from rag_enterprise.generation.repositories import MessageRepository
 from rag_enterprise.generation.service import GenerationService
 from rag_enterprise.indexing import models as indexing_models  # noqa: F401
@@ -40,11 +40,11 @@ class FakeRetrieval:
 
 
 @dataclass
-class SlowLLM(OpenAICompatibleLLMProvider):
+class SlowLLM(MockProvider):
     delay: float = 0.2
 
     def __init__(self, delay: float = 0.2) -> None:
-        super().__init__(mode="echo", model_key="slow-echo")
+        super().__init__(model_key="slow-echo")
         self.delay = delay
 
     async def complete(self, request: object) -> object:  # type: ignore[override]
@@ -123,7 +123,7 @@ async def test_grounded_answer(
     service = GenerationService(
         session_factory=gen_session_factory,
         retrieval_service=retrieval,  # type: ignore[arg-type]
-        llm_provider=OpenAICompatibleLLMProvider(mode="echo"),
+        llm_provider=MockProvider(),
         prompt_builder=PromptBuilder(),
         min_evidence_score=0.25,
         retry_delays_seconds=(0.0,),
@@ -162,12 +162,12 @@ async def test_insufficient_evidence_abstains(
             warnings=["no_results"],
         )
     )
-    llm = OpenAICompatibleLLMProvider(mode="echo")
+    llm = MockProvider()
     called = {"n": 0}
 
     async def tracking_complete(request: object) -> object:
         called["n"] += 1
-        return await OpenAICompatibleLLMProvider.complete(llm, request)  # type: ignore[arg-type]
+        return await MockProvider.complete(llm, request)  # type: ignore[arg-type]
 
     llm.complete = tracking_complete  # type: ignore[method-assign]
 
@@ -212,7 +212,7 @@ async def test_low_score_abstains(
     service = GenerationService(
         session_factory=gen_session_factory,
         retrieval_service=retrieval,  # type: ignore[arg-type]
-        llm_provider=OpenAICompatibleLLMProvider(mode="echo"),
+        llm_provider=MockProvider(),
         min_evidence_score=0.25,
         retry_delays_seconds=(0.0,),
     )
@@ -250,7 +250,7 @@ async def test_conversation_history_window(
     service = GenerationService(
         session_factory=gen_session_factory,
         retrieval_service=retrieval,  # type: ignore[arg-type]
-        llm_provider=OpenAICompatibleLLMProvider(mode="echo"),
+        llm_provider=MockProvider(),
         max_history_messages=5,
         retry_delays_seconds=(0.0,),
     )
@@ -340,7 +340,7 @@ async def test_explicit_history_used(
     service = GenerationService(
         session_factory=gen_session_factory,
         retrieval_service=retrieval,  # type: ignore[arg-type]
-        llm_provider=OpenAICompatibleLLMProvider(mode="echo"),
+        llm_provider=MockProvider(),
         retry_delays_seconds=(0.0,),
     )
     result = await service.generate(

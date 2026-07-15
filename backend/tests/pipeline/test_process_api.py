@@ -27,7 +27,7 @@ async def process_client(
     monkeypatch.setenv("EVALUATION_STORAGE_ROOT", str(tmp_path / "eval"))
     monkeypatch.setenv("FILE_STORAGE_ROOT", str(tmp_path / "uploads"))
     monkeypatch.setenv("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
-    monkeypatch.setenv("LLM_BACKEND", "echo")
+    monkeypatch.setenv("LLM_BACKEND", "mock")
     monkeypatch.setenv("EMBEDDING_BACKEND", "deterministic")
     monkeypatch.setenv("APP_ENV", "test")
     get_settings.cache_clear()

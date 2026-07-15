@@ -66,12 +66,13 @@ Response (`SuccessEnvelope`):
 
 ## LLM provider
 
-`OpenAICompatibleLLMProvider`:
+Provider-agnostic factory (`create_llm_provider`). See [LLM Provider Layer (RC2.6)](LLM_PROVIDER_LAYER.md).
 
-| `LLM_BACKEND` | Behavior |
-| --- | --- |
-| `echo` (default) | Deterministic local completion for CI/dev |
-| `http` | OpenAI-compatible `POST {LLM_BASE_URL}/chat/completions` |
+| `LLM_BACKEND` | Provider | Behavior |
+| --- | --- | --- |
+| `local` (default) | `ollama` | Local Ollama wiring; generate deferred to RC2.7 |
+| `api` | `openai` | OpenAI-compatible `POST {OPENAI_BASE_URL}/chat/completions` |
+| `mock` | `echo` | Deterministic stub for CI (legacy `echo` behavior) |
 
 Timeout: `LLM_TIMEOUT_SECONDS` (default 60s).
 
@@ -85,15 +86,19 @@ Timeout: `LLM_TIMEOUT_SECONDS` (default 60s).
 
 | Env | Default |
 | --- | --- |
-| `LLM_BACKEND` | `echo` |
-| `LLM_MODEL_KEY` | `gpt-4o-mini` |
-| `LLM_BASE_URL` | unset (required when `LLM_BACKEND=http`) |
-| `LLM_API_KEY` | unset (required when `LLM_BACKEND=http`; not required for `echo`) |
+| `LLM_BACKEND` | `local` |
+| `LOCAL_PROVIDER` | `ollama` |
+| `OLLAMA_BASE_URL` | `http://localhost:11434` |
+| `API_PROVIDER` | `openai` |
+| `OPENAI_BASE_URL` | unset (required when `LLM_BACKEND=api`) |
+| `OPENAI_API_KEY` | unset (required when `LLM_BACKEND=api`) |
+| `LLM_MODEL_KEY` | `auto` |
 | `GENERATION_MIN_EVIDENCE_SCORE` | `0.25` |
 | `GENERATION_MAX_HISTORY_MESSAGES` | `6` |
 
-Startup validation enforces the API-key / base-URL rules for `http` vs `echo`.
-See [CONFIGURATION.md](CONFIGURATION.md).
+Legacy: `echo`→`mock`, `http`→`api`; `LLM_BASE_URL` / `LLM_API_KEY` fill `OPENAI_*` when unset.
+
+Startup validation rules: [CONFIGURATION.md](CONFIGURATION.md).
 
 ## Auth headers
 

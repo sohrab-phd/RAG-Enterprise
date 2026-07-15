@@ -68,11 +68,18 @@ def _settings(tmp_path: Path | None = None, **overrides: object) -> Settings:
         "embedding_dimensions": 1024,
         "embedding_batch_size": 32,
         "retrieval_default_top_k": 8,
-        "llm_backend": "echo",
-        "llm_model_key": "gpt-4o-mini",
+        "llm_backend": "mock",
+        "local_provider": "ollama",
+        "api_provider": "openai",
+        "mock_provider": "echo",
+        "ollama_base_url": "http://localhost:11434",
+        "openai_base_url": None,
+        "openai_api_key": None,
+        "llm_model_key": "auto",
         "llm_base_url": None,
         "llm_api_key": None,
         "llm_timeout_seconds": 60.0,
+        "llm_legacy_backend": None,
         "generation_min_evidence_score": 0.25,
         "generation_max_history_messages": 6,
         "evaluation_storage_root": eval_root,
@@ -101,20 +108,22 @@ def test_file_storage_root_created(tmp_path: Path) -> None:
     assert root.is_dir()
 
 
-def test_echo_llm_does_not_require_api_key(tmp_path: Path) -> None:
+def test_mock_llm_does_not_require_api_key(tmp_path: Path) -> None:
     settings = _settings(
         tmp_path,
-        llm_backend="echo",
-        llm_api_key=None,
-        llm_base_url=None,
+        llm_backend="mock",
+        openai_api_key=None,
+        openai_base_url=None,
     )
     validate_configuration(settings)
 
 
-def test_http_llm_requires_api_key_and_base_url(tmp_path: Path) -> None:
+def test_api_llm_requires_api_key_and_base_url(tmp_path: Path) -> None:
     settings = _settings(
         tmp_path,
-        llm_backend="http",
+        llm_backend="api",
+        openai_api_key=None,
+        openai_base_url=None,
         llm_api_key=None,
         llm_base_url=None,
     )
@@ -123,18 +132,26 @@ def test_http_llm_requires_api_key_and_base_url(tmp_path: Path) -> None:
 
     report = str(exc_info.value)
     assert "[LLM]" in report
-    assert "LLM_API_KEY" in report
-    assert "LLM_BASE_URL" in report
+    assert "OPENAI_API_KEY" in report
+    assert "OPENAI_BASE_URL" in report
 
 
-def test_http_llm_accepts_key_and_base_url(tmp_path: Path) -> None:
+def test_api_llm_accepts_key_and_base_url(tmp_path: Path) -> None:
     settings = _settings(
         tmp_path,
-        llm_backend="http",
-        llm_api_key="sk-test",
-        llm_base_url="https://api.example.com/v1",
+        llm_backend="api",
+        openai_api_key="sk-test",
+        openai_base_url="https://api.example.com/v1",
+        llm_model_key="gpt-4o-mini",
     )
     validate_configuration(settings)
+
+
+def test_local_llm_requires_ollama_base_url(tmp_path: Path) -> None:
+    settings = _settings(tmp_path, llm_backend="local", ollama_base_url="  ")
+    with pytest.raises(ConfigurationError) as exc_info:
+        validate_configuration(settings)
+    assert "OLLAMA_BASE_URL" in str(exc_info.value)
 
 
 def test_evaluation_directory_created_when_missing(tmp_path: Path) -> None:

@@ -15,7 +15,7 @@ from rag_enterprise.db.base import ModelBase
 from rag_enterprise.db.session.factory import create_engine_and_session_factory
 from rag_enterprise.generation import persistence as generation_models  # noqa: F401
 from rag_enterprise.generation.prompt_builder import PromptBuilder
-from rag_enterprise.generation.providers import OpenAICompatibleLLMProvider
+from rag_enterprise.generation.providers import MockProvider
 from rag_enterprise.generation.service import GenerationService
 from rag_enterprise.indexing import models as indexing_models  # noqa: F401
 from rag_enterprise.indexing.providers import BgeM3EmbeddingProvider
@@ -88,7 +88,7 @@ async def chat_client() -> AsyncClient:
     container.session_factory = session_factory
     container.file_storage = InMemoryFileStorage()
     container.embedding_provider = BgeM3EmbeddingProvider(mode="deterministic")
-    container.llm_provider = OpenAICompatibleLLMProvider(mode="echo")
+    container.llm_provider = MockProvider()
     container.retrieval_service = retrieval  # type: ignore[assignment]
     container.indexing_service = None
     container.generation_service = GenerationService(

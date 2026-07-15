@@ -34,7 +34,7 @@ backend/src/rag_enterprise/core/config/
 | Group | Rules |
 | --- | --- |
 | **Database** | Non-empty host/user/name; port 1–65535; pool size & timeouts positive; max overflow ≥ 0; resolved URL uses postgresql/sqlite |
-| **LLM** | `LLM_BACKEND` ∈ `{echo, http}`; non-empty model key; positive timeout; evidence score in `[0, 1]`. **`echo` does not require an API key.** **`http` requires `LLM_API_KEY` and `LLM_BASE_URL`.** |
+| **LLM** | `LLM_BACKEND` ∈ `{local, api, mock}` (legacy `echo`→`mock`, `http`→`api`); provider enums; non-empty model key; positive timeout; evidence score in `[0, 1]`. **`mock` does not require credentials.** **`api` requires `OPENAI_API_KEY` and `OPENAI_BASE_URL`** (or legacy `LLM_API_KEY` / `LLM_BASE_URL`). **`local` requires `OLLAMA_BASE_URL`.** |
 | **Embedding** | `EMBEDDING_BACKEND` ∈ `{deterministic, flag}`; non-empty model key; dimensions, batch size, and default top_k positive |
 | **Evaluation** | `EVALUATION_STORAGE_ROOT` non-empty; create directory if missing; path must be a directory |
 | **Upload** | `FILE_STORAGE_ROOT` non-empty; create/writable directory; `UPLOAD_MAX_FILE_SIZE_BYTES`, `UPLOAD_MAX_BULK_FILES`, `UPLOAD_SESSION_TTL_HOURS` must be positive |
@@ -52,8 +52,8 @@ conflicting environment override.
 Configuration validation failed. Fix the issues below and restart.
 
 [LLM]
-  - LLM_API_KEY: API key is required when LLM_BACKEND=http
-  - LLM_BASE_URL: base URL is required when LLM_BACKEND=http
+  - OPENAI_API_KEY: OPENAI_API_KEY (or legacy LLM_API_KEY) is required when LLM_BACKEND=api
+  - OPENAI_BASE_URL: OPENAI_BASE_URL (or legacy LLM_BASE_URL) is required when LLM_BACKEND=api
 
 [Upload]
   - UPLOAD_MAX_FILE_SIZE_BYTES: max file size must be positive (got 0)

@@ -45,9 +45,17 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         app_name=settings.app_name,
         environment=settings.app_env,
         llm_backend=settings.llm_backend,
+        llm_provider=settings.llm_provider_name,
         embedding_backend=settings.embedding_backend,
         evaluation_storage_root=settings.evaluation_storage_root,
     )
+    if settings.llm_legacy_backend:
+        logger.warning(
+            "llm_backend_deprecated",
+            legacy=settings.llm_legacy_backend,
+            mapped_to=settings.llm_backend,
+            message="echo/http are deprecated; use local/api/mock.",
+        )
 
     logger.info(
         "application_starting",

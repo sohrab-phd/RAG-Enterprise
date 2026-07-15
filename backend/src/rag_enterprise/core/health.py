@@ -20,6 +20,7 @@ from rag_enterprise.application.interfaces.file_storage import FileStorage
 from rag_enterprise.core.config.settings import Settings
 from rag_enterprise.core.dependencies.providers import AppContainer, get_container
 from rag_enterprise.core.runtime import is_configuration_validated
+from rag_enterprise.generation.providers import describe_llm_runtime
 from rag_enterprise.indexing.models import Chunk, Embedding
 from rag_enterprise.knowledge.models import Document
 
@@ -237,13 +238,20 @@ async def build_system_inventory(settings: Settings) -> dict[str, Any]:
         except OSError:
             evaluation_run_count = 0
 
+    llm = describe_llm_runtime(settings)
     return {
         "version": __version__,
         "environment": settings.app_env,
         "providers": {
             "llm": {
-                "name": "openai_compatible",
-                "mode": settings.llm_backend,
+                "name": llm.provider,
+                "mode": llm.backend,
+                "backend": llm.backend,
+                "provider": llm.provider,
+                "model": llm.model,
+                "timeout_seconds": llm.timeout_seconds,
+                "reachability": llm.reachability,
+                "latency_ms": llm.latency_ms,
             },
             "embedding": {
                 "name": "bge_m3",
@@ -255,6 +263,12 @@ async def build_system_inventory(settings: Settings) -> dict[str, Any]:
             "embedding_model_key": settings.embedding_model_key,
             "embedding_dimensions": settings.embedding_dimensions,
             "prompt_template_version": "v1",
+        },
+        "llm": {
+            "backend": llm.backend,
+            "provider": llm.provider,
+            "model": llm.model,
+            "timeout_seconds": llm.timeout_seconds,
         },
         "counts": {
             "documents": document_count,

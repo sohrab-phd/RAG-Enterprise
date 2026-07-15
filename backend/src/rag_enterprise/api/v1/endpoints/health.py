@@ -58,6 +58,23 @@ class SystemProviderDTO(BaseModel):
 
     name: str
     mode: str
+    backend: str | None = None
+    provider: str | None = None
+    model: str | None = None
+    timeout_seconds: float | None = None
+    reachability: str | None = None
+    latency_ms: float | None = None
+
+
+class SystemLlmDTO(BaseModel):
+    """LLM execution configuration exposed on /system."""
+
+    model_config = ConfigDict(frozen=True)
+
+    backend: str
+    provider: str
+    model: str
+    timeout_seconds: float
 
 
 class SystemModelsDTO(BaseModel):
@@ -88,6 +105,7 @@ class SystemResponse(BaseModel):
     version: str
     environment: str
     providers: dict[str, SystemProviderDTO]
+    llm: SystemLlmDTO
     models: SystemModelsDTO
     counts: SystemCountsDTO
     configuration_validated: bool
@@ -150,13 +168,37 @@ async def system(settings: SettingsDep, response: Response) -> SystemResponse:
     providers_raw = inventory["providers"]
     models_raw = inventory["models"]
     counts_raw = inventory["counts"]
+    llm_raw = inventory["llm"]
     return SystemResponse(
         version=str(inventory["version"]),
         environment=str(inventory["environment"]),
         providers={
-            key: SystemProviderDTO(name=str(value["name"]), mode=str(value["mode"]))
+            key: SystemProviderDTO(
+                name=str(value["name"]),
+                mode=str(value["mode"]),
+                backend=(str(value["backend"]) if value.get("backend") is not None else None),
+                provider=(str(value["provider"]) if value.get("provider") is not None else None),
+                model=(str(value["model"]) if value.get("model") is not None else None),
+                timeout_seconds=(
+                    float(value["timeout_seconds"])
+                    if value.get("timeout_seconds") is not None
+                    else None
+                ),
+                reachability=(
+                    str(value["reachability"]) if value.get("reachability") is not None else None
+                ),
+                latency_ms=(
+                    float(value["latency_ms"]) if value.get("latency_ms") is not None else None
+                ),
+            )
             for key, value in providers_raw.items()
         },
+        llm=SystemLlmDTO(
+            backend=str(llm_raw["backend"]),
+            provider=str(llm_raw["provider"]),
+            model=str(llm_raw["model"]),
+            timeout_seconds=float(llm_raw["timeout_seconds"]),
+        ),
         models=SystemModelsDTO(
             llm_model_key=str(models_raw["llm_model_key"]),
             embedding_model_key=str(models_raw["embedding_model_key"]),

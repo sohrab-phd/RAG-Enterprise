@@ -44,7 +44,10 @@ Does **not** call LLM or embedding providers.
 Returns configured inventory (never invokes models):
 
 - `version`, `environment`
-- provider names + modes (`openai_compatible` / `bge_m3` with `echo|http` / `deterministic|flag`)
+- provider names + modes (`llm`: `local|api|mock` with provider `ollama|openai|echo`; embeddings:
+  `deterministic|flag|sentence_transformers`)
+- dedicated `llm` object: `backend`, `provider`, `model`, `timeout_seconds`
+- reachability / latency on `providers.llm` are config-only (`not_checked` / `null`) until RC2.7
 - configured model keys + embedding dimensions + prompt template version `v1`
 - counts: documents, chunks, embeddings, evaluation runs
 - `configuration_validated`, `dependency_injection_initialized`

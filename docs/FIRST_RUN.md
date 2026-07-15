@@ -11,8 +11,9 @@ path to your clone (the folder that contains `backend/`, `frontend/`, and
 This path uses:
 
 - Local Docker Compose for PostgreSQL (pgvector) and Redis
-- Backend defaults suitable for a first demo: `LLM_BACKEND=echo`,
-  `EMBEDDING_BACKEND=deterministic` (no external model API keys required)
+- Backend defaults: `LLM_BACKEND=local` (Ollama; generate lands in RC2.7). For a first
+  demo **without** Ollama set `LLM_BACKEND=mock` (deterministic echo stub). Embeddings
+  default to `EMBEDDING_BACKEND=deterministic` (no external model API keys required)
 - The operator console for Knowledge, Chat, and Evaluation (sidebar links)
 
 ---
@@ -120,20 +121,21 @@ Only the values that matter for a standard local first run are listed. Defaults 
 ### Recommended local additions (optional)
 
 You may add these to `backend/.env` for a smoother first Chat experience with the
-default **deterministic** embeddings (not semantic):
+default **deterministic** embeddings (not semantic). Until Ollama generate ships
+(RC2.7), use **mock** for chat demos:
 
 ```bash
-LLM_BACKEND=echo
+LLM_BACKEND=mock
+MOCK_PROVIDER=echo
 EMBEDDING_BACKEND=deterministic
 GENERATION_MIN_EVIDENCE_SCORE=0.0
 ```
 
 Without lowering the evidence score, Chat may abstain more often under deterministic
-embeddings. `echo` and `deterministic` are the backend defaults and do **not** need
-API keys.
+embeddings. `mock` and `deterministic` do **not** need API keys.
 
-The default **Echo** LLM provider produces **deterministic grounded responses**. That
-is expected Version 1.0.0 behavior (not a live third-party chat model).
+`LLM_BACKEND=local` is the V1 production-oriented default (Ollama). Chat generation
+against Ollama is scheduled for RC2.7 — use `mock` or `api` until then.
 
 Frontend actor headers default in code to the development stub IDs (no login in
 Version 1.0.0). Override only if you intentionally change tenant headers:
@@ -354,10 +356,10 @@ active knowledge base.
 3. Ask a question grounded in the uploaded text (examples:
    `demo/questions/suggested-questions-fa.md`).
 
-**Expected result:** An assistant reply is returned. With the default **Echo**
-provider (`LLM_BACKEND=echo`), responses are **deterministic grounded** answers.
-That is expected Version 1.0.0 behavior (not a third-party LLM). Prefer questions
-whose answers appear in the indexed text.
+**Expected result:** An assistant reply is returned. With `LLM_BACKEND=mock`
+(echo stub), responses are **deterministic grounded** answers suitable for demos.
+For real models use `LLM_BACKEND=api` (OpenAI-compatible) or wait for local Ollama
+generate (RC2.7). Prefer questions whose answers appear in the indexed text.
 
 ### 6. Evidence panel
 
