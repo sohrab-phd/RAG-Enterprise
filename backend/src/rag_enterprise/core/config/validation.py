@@ -230,8 +230,16 @@ def _validate_llm(settings: Settings) -> list[ConfigIssue]:
             )
         )
 
+    # Empty keys are normalized to "auto" in Settings; reject only after normalize
+    # if somehow still blank.
     if not settings.llm_model_key.strip():
-        issues.append(ConfigIssue("LLM", "model key must be non-empty", field="LLM_MODEL_KEY"))
+        issues.append(
+            ConfigIssue(
+                "LLM",
+                "model key must be non-empty (use auto or an installed model name)",
+                field="LLM_MODEL_KEY",
+            )
+        )
 
     if settings.llm_timeout_seconds <= 0:
         issues.append(

@@ -11,9 +11,9 @@ path to your clone (the folder that contains `backend/`, `frontend/`, and
 This path uses:
 
 - Local Docker Compose for PostgreSQL (pgvector) and Redis
-- Backend defaults: `LLM_BACKEND=local` (Ollama; generate lands in RC2.7). For a first
-  demo **without** Ollama set `LLM_BACKEND=mock` (deterministic echo stub). Embeddings
-  default to `EMBEDDING_BACKEND=deterministic` (no external model API keys required)
+- Backend defaults: `LLM_BACKEND=local` (Ollama chat — see [OLLAMA.md](backend/OLLAMA.md)).
+  For a first demo **without** Ollama set `LLM_BACKEND=mock` (deterministic echo stub).
+  Embeddings default to `EMBEDDING_BACKEND=deterministic` (no external model API keys required)
 - The operator console for Knowledge, Chat, and Evaluation (sidebar links)
 
 ---
@@ -121,8 +121,9 @@ Only the values that matter for a standard local first run are listed. Defaults 
 ### Recommended local additions (optional)
 
 You may add these to `backend/.env` for a smoother first Chat experience with the
-default **deterministic** embeddings (not semantic). Until Ollama generate ships
-(RC2.7), use **mock** for chat demos:
+default **deterministic** embeddings (not semantic), or run local Ollama:
+
+**Offline mock (no Ollama):**
 
 ```bash
 LLM_BACKEND=mock
@@ -131,11 +132,21 @@ EMBEDDING_BACKEND=deterministic
 GENERATION_MIN_EVIDENCE_SCORE=0.0
 ```
 
+**Local Ollama (recommended for real Persian answers):**
+
+```bash
+LLM_BACKEND=local
+LOCAL_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+LLM_MODEL_KEY=auto
+LLM_TIMEOUT_SECONDS=120
+```
+
+Install Ollama, pull a model (`ollama pull <model>`), then restart the backend.
+Details: [OLLAMA.md](backend/OLLAMA.md).
+
 Without lowering the evidence score, Chat may abstain more often under deterministic
 embeddings. `mock` and `deterministic` do **not** need API keys.
-
-`LLM_BACKEND=local` is the V1 production-oriented default (Ollama). Chat generation
-against Ollama is scheduled for RC2.7 — use `mock` or `api` until then.
 
 Frontend actor headers default in code to the development stub IDs (no login in
 Version 1.0.0). Override only if you intentionally change tenant headers:
@@ -357,9 +368,10 @@ active knowledge base.
    `demo/questions/suggested-questions-fa.md`).
 
 **Expected result:** An assistant reply is returned. With `LLM_BACKEND=mock`
-(echo stub), responses are **deterministic grounded** answers suitable for demos.
-For real models use `LLM_BACKEND=api` (OpenAI-compatible) or wait for local Ollama
-generate (RC2.7). Prefer questions whose answers appear in the indexed text.
+(echo stub), responses are deterministic grounded answers suitable for demos.
+With `LLM_BACKEND=local`, Ollama generates answers ([OLLAMA.md](backend/OLLAMA.md)).
+`LLM_BACKEND=api` uses an OpenAI-compatible remote model. Prefer questions whose
+answers appear in the indexed text.
 
 ### 6. Evidence panel
 

@@ -1,8 +1,9 @@
 # Operational Health (RC1.2)
 
 > **Status:** Implemented  
-> **Scope:** Liveness, readiness, and system inventory probes — no auth, no frontend,
-> no LLM/embedding provider calls.
+> **Scope:** Liveness, readiness, and system inventory probes — no auth, no frontend.
+> Readiness does not call embedding providers. When `LLM_BACKEND=local`, readiness
+> probes Ollama through the LLM provider (see [OLLAMA.md](OLLAMA.md)).
 
 ## Endpoints
 
@@ -11,8 +12,9 @@ All routes are unauthenticated and live under `/api/v1`.
 | Path | Purpose | Dependencies |
 | --- | --- | --- |
 | `GET /live` | Process liveness | None (immediate) |
-| `GET /ready` | Traffic readiness | DI, config flag, DB `SELECT 1`, evaluation dir, upload storage probe |
-| `GET /system` | Operator inventory | Settings + optional DB/eval counts |
+| `GET /ready` | Traffic readiness | DI, config flag, DB `SELECT 1`, evaluation dir, upload storage probe; **`llm` when `LLM_BACKEND=local`** |
+| `GET /system` | Operator inventory | Settings + optional DB/eval counts (+ LLM inventory) |
+| `GET /system/models` | LLM model catalog | Settings + provider inventory |
 | `GET /health` | Legacy compatibility | Settings only |
 
 ### `/live`
@@ -36,8 +38,9 @@ Checks (bounded to ~2s each):
 | `database` | `SELECT 1` via SQLAlchemy engine |
 | `evaluation_storage` | `EVALUATION_STORAGE_ROOT` is a writable directory |
 | `upload_storage` | local filesystem `put` → `get` → `delete` probe ([LOCAL_FILE_STORAGE.md](LOCAL_FILE_STORAGE.md)) |
+| `llm` | Only when `LLM_BACKEND=local`: Ollama reachable, models, selected model, generation ping ([OLLAMA.md](OLLAMA.md)) |
 
-Does **not** call LLM or embedding providers.
+Does **not** call embedding providers. Local LLM probes run only for `LLM_BACKEND=local`.
 
 ### `/system`
 
@@ -46,8 +49,10 @@ Returns configured inventory (never invokes models):
 - `version`, `environment`
 - provider names + modes (`llm`: `local|api|mock` with provider `ollama|openai|echo`; embeddings:
   `deterministic|flag|sentence_transformers`)
-- dedicated `llm` object: `backend`, `provider`, `model`, `timeout_seconds`
-- reachability / latency on `providers.llm` are config-only (`not_checked` / `null`) until RC2.7
+- dedicated `llm` object: `backend`, `provider`, `model`, `selected_model`,
+  `installed_models`, `timeout_seconds`, `ollama_version`, `selection_mode`, `reachability`
+- `GET /system/models` developer catalog for installed / selected models
+- reachability on `providers.llm` reflects the local provider after init when available
 - configured model keys + embedding dimensions + prompt template version `v1`
 - counts: documents, chunks, embeddings, evaluation runs
 - `configuration_validated`, `dependency_injection_initialized`

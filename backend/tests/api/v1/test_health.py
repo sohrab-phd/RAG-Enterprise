@@ -117,7 +117,9 @@ async def test_system_inventory(ready_client: AsyncClient) -> None:
     assert payload["llm"]["backend"] == "mock"
     assert payload["llm"]["provider"] == "echo"
     assert payload["llm"]["model"]
+    assert payload["llm"]["selected_model"]
     assert payload["llm"]["timeout_seconds"] == 60.0
+    assert isinstance(payload["llm"]["installed_models"], list)
     assert payload["providers"]["embedding"]["mode"] == "deterministic"
     assert payload["models"]["llm_model_key"]
     assert payload["models"]["embedding_model_key"]
@@ -129,6 +131,17 @@ async def test_system_inventory(ready_client: AsyncClient) -> None:
     assert payload["counts"]["ok"] is True
     assert payload["configuration_validated"] is True
     assert payload["dependency_injection_initialized"] is True
+
+
+@pytest.mark.asyncio
+async def test_system_models_catalog(ready_client: AsyncClient) -> None:
+    response = await ready_client.get("/api/v1/system/models")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["backend"] == "mock"
+    assert payload["provider"] == "echo"
+    assert payload["selected_model"]
+    assert isinstance(payload["installed_models"], list)
 
 
 @pytest.mark.asyncio
@@ -154,3 +167,4 @@ async def test_ready_openapi_documented(ready_client: AsyncClient) -> None:
     assert "/api/v1/live" in paths
     assert "/api/v1/ready" in paths
     assert "/api/v1/system" in paths
+    assert "/api/v1/system/models" in paths

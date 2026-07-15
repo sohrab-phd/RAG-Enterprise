@@ -34,7 +34,7 @@ backend/src/rag_enterprise/core/config/
 | Group | Rules |
 | --- | --- |
 | **Database** | Non-empty host/user/name; port 1–65535; pool size & timeouts positive; max overflow ≥ 0; resolved URL uses postgresql/sqlite |
-| **LLM** | `LLM_BACKEND` ∈ `{local, api, mock}` (legacy `echo`→`mock`, `http`→`api`); provider enums; non-empty model key; positive timeout; evidence score in `[0, 1]`. **`mock` does not require credentials.** **`api` requires `OPENAI_API_KEY` and `OPENAI_BASE_URL`** (or legacy `LLM_API_KEY` / `LLM_BASE_URL`). **`local` requires `OLLAMA_BASE_URL`.** |
+| **LLM** | `LLM_BACKEND` ∈ `{local, api, mock}` (legacy `echo`→`mock`, `http`→`api`); provider enums; model key non-empty after normalize (`auto` or explicit; empty→`auto`); positive timeout; evidence score in `[0, 1]`. **`mock` does not require credentials.** **`api` requires `OPENAI_API_KEY` and `OPENAI_BASE_URL`** (or legacy `LLM_API_KEY` / `LLM_BASE_URL`). **`local` requires `OLLAMA_BASE_URL`.** See [OLLAMA.md](OLLAMA.md). |
 | **Embedding** | `EMBEDDING_BACKEND` ∈ `{deterministic, flag}`; non-empty model key; dimensions, batch size, and default top_k positive |
 | **Evaluation** | `EVALUATION_STORAGE_ROOT` non-empty; create directory if missing; path must be a directory |
 | **Upload** | `FILE_STORAGE_ROOT` non-empty; create/writable directory; `UPLOAD_MAX_FILE_SIZE_BYTES`, `UPLOAD_MAX_BULK_FILES`, `UPLOAD_SESSION_TTL_HOURS` must be positive |

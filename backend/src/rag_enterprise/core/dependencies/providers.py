@@ -21,7 +21,7 @@ from rag_enterprise.core.config.settings import Settings, get_settings
 from rag_enterprise.db.session.factory import create_engine_and_session_factory
 from rag_enterprise.evaluation.service import EvaluationService
 from rag_enterprise.generation.prompt_builder import PromptBuilder, PromptBuilderConfig
-from rag_enterprise.generation.providers import create_llm_provider
+from rag_enterprise.generation.providers import OllamaStartupError, create_llm_provider
 from rag_enterprise.generation.service import GenerationService
 from rag_enterprise.indexing.providers import create_embedding_provider
 from rag_enterprise.indexing.service import IndexingService
@@ -67,7 +67,10 @@ class AppContainer:
         )
         self.file_storage = FileSystemStorage(self.settings.file_storage_root)
         self.embedding_provider = create_embedding_provider(self.settings)
-        self.llm_provider = create_llm_provider(self.settings)
+        try:
+            self.llm_provider = await create_llm_provider(self.settings)
+        except OllamaStartupError:
+            raise
         if self.session_factory is not None:
             register_knowledge_handlers(
                 command_dispatcher=self.command_dispatcher,
@@ -121,13 +124,18 @@ class AppContainer:
         if not self._initialized:
             return
 
+        if self.llm_provider is not None:
+            aclose = getattr(self.llm_provider, "aclose", None)
+            if aclose is not None:
+                await aclose()
+            self.llm_provider = None
+
         if self.engine is not None:
             await self.engine.dispose()
             self.engine = None
             self.session_factory = None
             self.file_storage = None
             self.embedding_provider = None
-            self.llm_provider = None
             self.indexing_service = None
             self.chunking_service = None
             self.document_processing_service = None

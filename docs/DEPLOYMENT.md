@@ -36,6 +36,7 @@ Service inventory: [infrastructure/README.md](../infrastructure/README.md).
 Startup validation (fail fast): [CONFIGURATION.md](backend/CONFIGURATION.md).
 
 LLM backends (`local` / `api` / `mock`): [LLM Provider Layer (RC2.6)](backend/LLM_PROVIDER_LAYER.md).
+Local Ollama: [OLLAMA.md](backend/OLLAMA.md).
 V1 defaults to **local** (Ollama). Prefer `mock` in CI; use `api` for OpenAI-compatible
 remote models. Legacy `echo`/`http` remap automatically with a startup warning.
 

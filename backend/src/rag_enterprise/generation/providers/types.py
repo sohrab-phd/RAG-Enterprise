@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)
@@ -15,7 +15,7 @@ class CompletionResult:
 
 @dataclass(frozen=True)
 class LLMRuntimeInfo:
-    """Config-only runtime description for health / system inventory (no probe calls)."""
+    """Runtime description for health / system inventory."""
 
     backend: str
     provider: str
@@ -23,3 +23,22 @@ class LLMRuntimeInfo:
     timeout_seconds: float
     reachability: str = "not_checked"
     latency_ms: float | None = None
+    selected_model: str | None = None
+    installed_models: tuple[str, ...] = ()
+    selection_mode: str | None = None
+    ollama_version: str | None = None
+    base_url: str | None = None
+    detail: str | None = None
+
+
+@dataclass(frozen=True)
+class OllamaHealthSnapshot:
+    """Result of a local Ollama readiness probe."""
+
+    reachable: bool
+    installed_models: tuple[str, ...]
+    selected_model: str | None
+    response_time_ms: float | None
+    detail: str
+    ollama_version: str | None = None
+    extras: dict[str, object] = field(default_factory=dict)

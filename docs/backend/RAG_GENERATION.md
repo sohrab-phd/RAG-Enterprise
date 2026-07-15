@@ -70,7 +70,7 @@ Provider-agnostic factory (`create_llm_provider`). See [LLM Provider Layer (RC2.
 
 | `LLM_BACKEND` | Provider | Behavior |
 | --- | --- | --- |
-| `local` (default) | `ollama` | Local Ollama wiring; generate deferred to RC2.7 |
+| `local` (default) | `ollama` | Local Ollama via `/api/chat` ([OLLAMA.md](OLLAMA.md)) |
 | `api` | `openai` | OpenAI-compatible `POST {OPENAI_BASE_URL}/chat/completions` |
 | `mock` | `echo` | Deterministic stub for CI (legacy `echo` behavior) |
 

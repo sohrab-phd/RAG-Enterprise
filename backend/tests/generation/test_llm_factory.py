@@ -12,7 +12,7 @@ from rag_enterprise.generation.providers import (
     MockProvider,
     OllamaProvider,
     OpenAICompatibleProvider,
-    create_llm_provider,
+    create_llm_provider_sync,
     describe_llm_runtime,
 )
 
@@ -64,20 +64,20 @@ def _settings(**overrides: object) -> Settings:
 
 
 def test_factory_selects_mock_provider() -> None:
-    provider = create_llm_provider(_settings(llm_backend="mock", llm_model_key="mock-echo"))
+    provider = create_llm_provider_sync(_settings(llm_backend="mock", llm_model_key="mock-echo"))
     assert isinstance(provider, MockProvider)
     assert provider.provider_name == "echo"
 
 
 def test_factory_selects_ollama_for_local() -> None:
-    provider = create_llm_provider(_settings(llm_backend="local", llm_model_key="auto"))
+    provider = create_llm_provider_sync(_settings(llm_backend="local", llm_model_key="auto"))
     assert isinstance(provider, OllamaProvider)
     assert provider.provider_name == "ollama"
     assert provider.base_url == "http://localhost:11434"
 
 
 def test_factory_selects_openai_compatible_for_api() -> None:
-    provider = create_llm_provider(
+    provider = create_llm_provider_sync(
         _settings(
             llm_backend="api",
             llm_model_key="gpt-4o-mini",
@@ -91,21 +91,22 @@ def test_factory_selects_openai_compatible_for_api() -> None:
 
 
 @pytest.mark.asyncio
-async def test_ollama_complete_is_not_implemented_yet() -> None:
-    provider = create_llm_provider(_settings(llm_backend="local"))
+async def test_ollama_complete_requires_initialization() -> None:
+    provider = create_llm_provider_sync(_settings(llm_backend="local"))
     from rag_enterprise.generation.exceptions import ModelUnavailableError
 
     class _Req:
         system_prompt = None
         user_prompt = "hello"
 
-    with pytest.raises(ModelUnavailableError, match="RC2.7"):
+    with pytest.raises(ModelUnavailableError):
         await provider.complete(_Req())  # type: ignore[arg-type]
+    await provider.aclose()  # type: ignore[attr-defined]
 
 
 @pytest.mark.asyncio
 async def test_mock_echo_behavior_preserved() -> None:
-    provider = create_llm_provider(_settings(llm_backend="mock"))
+    provider = create_llm_provider_sync(_settings(llm_backend="mock"))
 
     class _Req:
         system_prompt = "Answer with citations."

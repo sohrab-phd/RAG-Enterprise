@@ -74,7 +74,28 @@ class SystemLlmDTO(BaseModel):
     backend: str
     provider: str
     model: str
+    selected_model: str | None = None
+    installed_models: list[str] = Field(default_factory=list)
     timeout_seconds: float
+    ollama_version: str | None = None
+    selection_mode: str | None = None
+    reachability: str | None = None
+
+
+class SystemModelsCatalogDTO(BaseModel):
+    """Developer inventory for GET /system/models."""
+
+    model_config = ConfigDict(frozen=True)
+
+    backend: str
+    provider: str
+    selection_mode: str | None = None
+    selected_model: str | None = None
+    installed_models: list[str] = Field(default_factory=list)
+    base_url: str | None = None
+    reachable: bool | None = None
+    ollama_version: str | None = None
+    detail: str | None = None
 
 
 class SystemModelsDTO(BaseModel):
@@ -98,7 +119,7 @@ class SystemCountsDTO(BaseModel):
 
 
 class SystemResponse(BaseModel):
-    """Operator inventory endpoint — config + counts; no provider calls."""
+    """Operator inventory endpoint — config + counts; no provider writes."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -196,8 +217,21 @@ async def system(settings: SettingsDep, response: Response) -> SystemResponse:
         llm=SystemLlmDTO(
             backend=str(llm_raw["backend"]),
             provider=str(llm_raw["provider"]),
-            model=str(llm_raw["model"]),
+            model=str(llm_raw.get("selected_model") or llm_raw["model"]),
+            selected_model=(
+                str(llm_raw["selected_model"]) if llm_raw.get("selected_model") is not None else None
+            ),
+            installed_models=[str(item) for item in (llm_raw.get("installed_models") or [])],
             timeout_seconds=float(llm_raw["timeout_seconds"]),
+            ollama_version=(
+                str(llm_raw["ollama_version"]) if llm_raw.get("ollama_version") is not None else None
+            ),
+            selection_mode=(
+                str(llm_raw["selection_mode"]) if llm_raw.get("selection_mode") is not None else None
+            ),
+            reachability=(
+                str(llm_raw["reachability"]) if llm_raw.get("reachability") is not None else None
+            ),
         ),
         models=SystemModelsDTO(
             llm_model_key=str(models_raw["llm_model_key"]),
@@ -216,6 +250,72 @@ async def system(settings: SettingsDep, response: Response) -> SystemResponse:
         configuration_validated=bool(inventory["configuration_validated"]),
         dependency_injection_initialized=bool(inventory["dependency_injection_initialized"]),
         timestamp=datetime.now(UTC),
+    )
+
+
+@router.get(
+    "/system/models",
+    response_model=SystemModelsCatalogDTO,
+    responses={
+        200: {"description": "LLM model inventory"},
+        503: {"description": "Application container not ready"},
+    },
+    summary="LLM model inventory (developer)",
+    tags=["health"],
+)
+async def system_models(settings: SettingsDep, response: Response) -> SystemModelsCatalogDTO:
+    """Return selected / installed LLM models without calling GenerationService."""
+    from rag_enterprise.core.dependencies.providers import get_container
+    from rag_enterprise.generation.providers import describe_llm_runtime
+
+    try:
+        container = get_container()
+        provider = container.llm_provider if container.is_initialized else None
+    except RuntimeError:
+        container = None
+        provider = None
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+
+    info = describe_llm_runtime(settings, provider)
+    inventory = None
+    if provider is not None and hasattr(provider, "models_inventory"):
+        inventory = provider.models_inventory()  # type: ignore[attr-defined]
+
+    if inventory is None:
+        inventory = {
+            "backend": info.backend,
+            "provider": info.provider,
+            "selection_mode": info.selection_mode,
+            "selected_model": info.selected_model or info.model,
+            "installed_models": list(info.installed_models),
+            "base_url": info.base_url,
+            "reachable": info.reachability == "reachable",
+            "ollama_version": info.ollama_version,
+            "detail": info.detail,
+        }
+
+    return SystemModelsCatalogDTO(
+        backend=str(inventory.get("backend") or info.backend),
+        provider=str(inventory.get("provider") or info.provider),
+        selection_mode=(
+            str(inventory["selection_mode"])
+            if inventory.get("selection_mode") is not None
+            else None
+        ),
+        selected_model=(
+            str(inventory["selected_model"])
+            if inventory.get("selected_model") is not None
+            else None
+        ),
+        installed_models=[str(item) for item in (inventory.get("installed_models") or [])],
+        base_url=str(inventory["base_url"]) if inventory.get("base_url") is not None else None,
+        reachable=bool(inventory["reachable"]) if inventory.get("reachable") is not None else None,
+        ollama_version=(
+            str(inventory["ollama_version"])
+            if inventory.get("ollama_version") is not None
+            else None
+        ),
+        detail=str(inventory["detail"]) if inventory.get("detail") is not None else None,
     )
 
 

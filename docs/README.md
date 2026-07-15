@@ -46,6 +46,7 @@ Every major Version 1.0.0 document is reachable in **one click** from this page,
 | [API Foundation](backend/API_FOUNDATION.md) | Envelopes, versioning, OpenAPI |
 | [Configuration (RC1.1)](backend/CONFIGURATION.md) | Startup validation |
 | [LLM Provider Layer (RC2.6)](backend/LLM_PROVIDER_LAYER.md) | `local` / `api` / `mock` factory |
+| [Ollama Local LLM (RC2.7)](backend/OLLAMA.md) | Install, model selection, health |
 | [Local File Storage (RC1.6)](backend/LOCAL_FILE_STORAGE.md) | Durable upload binaries on disk |
 | [Process & Index (RC1.6)](backend/PROCESS_AND_INDEX.md) | Synchronous uploaded → indexed action |
 | [Operational Health (RC1.2)](backend/OPERATIONAL_HEALTH.md) | `/live`, `/ready`, `/system` |

@@ -208,6 +208,11 @@ class Settings(BaseSettings):
         if not (isinstance(openai_key, str) and openai_key.strip()) and isinstance(legacy_key, str):
             data["openai_api_key"] = legacy_key
 
+        # Empty LLM_MODEL_KEY is equivalent to auto (RC2.7 local selection).
+        model_raw = data.get("llm_model_key", data.get("LLM_MODEL_KEY"))
+        if model_raw is None or (isinstance(model_raw, str) and not model_raw.strip()):
+            data["llm_model_key"] = "auto"
+
         return data
 
     @computed_field  # type: ignore[prop-decorator]

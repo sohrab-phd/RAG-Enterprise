@@ -1,6 +1,7 @@
-"""Operational readiness and system inventory checks (RC1.2).
+"""Operational readiness and system inventory checks (RC1.2 / RC2.7).
 
-Does not call LLM or embedding providers. Fast dependency probes only.
+Database and storage probes remain fast. When ``LLM_BACKEND=local``, readiness
+also probes the configured LLM provider through the factory surface.
 """
 
 from __future__ import annotations
@@ -20,11 +21,12 @@ from rag_enterprise.application.interfaces.file_storage import FileStorage
 from rag_enterprise.core.config.settings import Settings
 from rag_enterprise.core.dependencies.providers import AppContainer, get_container
 from rag_enterprise.core.runtime import is_configuration_validated
-from rag_enterprise.generation.providers import describe_llm_runtime
+from rag_enterprise.generation.providers import describe_llm_runtime, probe_llm_provider
 from rag_enterprise.indexing.models import Chunk, Embedding
 from rag_enterprise.knowledge.models import Document
 
 READY_CHECK_TIMEOUT_SECONDS = 2.0
+LLM_READY_CHECK_TIMEOUT_SECONDS = 30.0
 UPLOAD_PROBE_KEY = "__health__/ready-probe"
 
 
@@ -91,6 +93,14 @@ async def evaluate_readiness(settings: Settings) -> ReadinessReport:
                 detail="skipped: DI not initialized",
             )
         )
+        if settings.llm_backend == "local":
+            checks.append(
+                CheckResult(
+                    name="llm",
+                    ok=False,
+                    detail="skipped: DI not initialized",
+                )
+            )
         return ReadinessReport(ready=False, checks=tuple(checks))
 
     db_result = await _check_database(container.engine)
@@ -105,8 +115,45 @@ async def evaluate_readiness(settings: Settings) -> ReadinessReport:
     upload_result = await _check_upload_storage(container.file_storage)
     checks.append(upload_result)
 
+    if settings.llm_backend == "local" and container.llm_provider is not None:
+        checks.append(await _check_local_llm(container.llm_provider))
+
     ready = all(item.ok for item in checks)
     return ReadinessReport(ready=ready, checks=tuple(checks))
+
+
+async def _check_local_llm(provider: object) -> CheckResult:
+    try:
+        snapshot = await asyncio.wait_for(
+            probe_llm_provider(provider),  # type: ignore[arg-type]
+            timeout=LLM_READY_CHECK_TIMEOUT_SECONDS,
+        )
+    except TimeoutError:
+        return CheckResult(
+            name="llm",
+            ok=False,
+            detail="local LLM readiness probe timed out",
+        )
+    except Exception as exc:  # noqa: BLE001 — surface as not-ready, never crash probe
+        return CheckResult(name="llm", ok=False, detail=f"local LLM probe error: {exc}")
+
+    if snapshot is None:
+        return CheckResult(
+            name="llm",
+            ok=False,
+            detail="local LLM provider does not support health probes",
+        )
+
+    ok = bool(snapshot.get("reachable")) and snapshot.get("detail") == "ok"
+    installed = snapshot.get("installed_models") or []
+    detail = (
+        f"reachable={snapshot.get('reachable')} "
+        f"selected_model={snapshot.get('selected_model')} "
+        f"installed_models={list(installed)} "
+        f"response_time_ms={snapshot.get('response_time_ms')} "
+        f"detail={snapshot.get('detail')}"
+    )
+    return CheckResult(name="llm", ok=ok, detail=detail)
 
 
 def _resolve_container() -> tuple[AppContainer | None, bool, str]:
@@ -238,7 +285,7 @@ async def build_system_inventory(settings: Settings) -> dict[str, Any]:
         except OSError:
             evaluation_run_count = 0
 
-    llm = describe_llm_runtime(settings)
+    llm = describe_llm_runtime(settings, container.llm_provider if container else None)
     return {
         "version": __version__,
         "environment": settings.app_env,
@@ -248,7 +295,7 @@ async def build_system_inventory(settings: Settings) -> dict[str, Any]:
                 "mode": llm.backend,
                 "backend": llm.backend,
                 "provider": llm.provider,
-                "model": llm.model,
+                "model": llm.selected_model or llm.model,
                 "timeout_seconds": llm.timeout_seconds,
                 "reachability": llm.reachability,
                 "latency_ms": llm.latency_ms,
@@ -267,8 +314,13 @@ async def build_system_inventory(settings: Settings) -> dict[str, Any]:
         "llm": {
             "backend": llm.backend,
             "provider": llm.provider,
-            "model": llm.model,
+            "model": llm.selected_model or llm.model,
+            "selected_model": llm.selected_model or llm.model,
+            "installed_models": list(llm.installed_models),
             "timeout_seconds": llm.timeout_seconds,
+            "ollama_version": llm.ollama_version,
+            "selection_mode": llm.selection_mode,
+            "reachability": llm.reachability,
         },
         "counts": {
             "documents": document_count,
