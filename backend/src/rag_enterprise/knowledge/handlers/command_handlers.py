@@ -636,14 +636,20 @@ class RestoreDocumentHandler:
 
 
 class DeleteDocumentHandler:
-    def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
+    def __init__(
+        self,
+        session_factory: async_sessionmaker[AsyncSession],
+        file_storage: FileStorage,
+    ) -> None:
         self._session_factory = session_factory
+        self._file_storage = file_storage
 
     async def handle(self, command: cmd.DeleteDocumentCommand) -> Result[None]:
         auth = require_permission(command.actor, "document:delete")
         if auth.is_failure:
             return Result.fail(auth.error)  # type: ignore[arg-type]
         scope = _scope(command)
+        storage_keys: list[str] = []
         async with KnowledgeUnitOfWork(self._session_factory) as uow:
             document = await uow.documents.get_scoped(
                 scope, command.knowledge_base_id, command.document_id
@@ -652,18 +658,42 @@ class DeleteDocumentHandler:
                 return Result.fail(not_found("Document").error)  # type: ignore[arg-type]
             if document.legal_hold:
                 return Result.fail(conflict("Document is under legal hold").error)  # type: ignore[arg-type]
-            if document.status == DocumentStatus.DELETED:
-                return Result.ok(None)
-            now = datetime.now(UTC)
-            document.status = DocumentStatus.DELETED
-            document.deleted_at = now
-            document.deleted_by_user_id = command.actor.user_id
-            document.row_version += 1
+
+            storage_keys.extend(
+                await uow.document_versions.list_storage_keys_for_document(document.id)
+            )
+            storage_keys.extend(
+                await uow.upload_sessions.list_staging_keys_for_document(document.id)
+            )
+
+            embeddings = EmbeddingRepository(uow.session)
+            chunks = ChunkRepository(uow.session)
+
+            await embeddings.delete_all_for_document(document.id)
+            await chunks.delete_all_for_document(document.id)
+            await uow.document_versions.delete_all_for_document(document.id)
+            await uow.upload_sessions.delete_all_for_document(document.id)
+
             kb = await uow.knowledge_bases.get_scoped(scope, command.knowledge_base_id)
             if kb is not None and kb.document_count > 0:
                 kb.document_count -= 1
+
+            await uow.documents.remove(document)
             await uow.commit()
-            return Result.ok(None)
+
+        await self._best_effort_delete_files(storage_keys)
+        return Result.ok(None)
+
+    async def _best_effort_delete_files(self, keys: list[str]) -> None:
+        seen: set[str] = set()
+        for key in keys:
+            if not key or key in seen:
+                continue
+            seen.add(key)
+            try:
+                await self._file_storage.delete(key=key)
+            except Exception:  # noqa: BLE001 — missing/corrupt files must not fail deletion
+                continue
 
 
 class MoveDocumentHandler:

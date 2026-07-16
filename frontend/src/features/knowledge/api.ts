@@ -126,6 +126,13 @@ export function getDocument(
   });
 }
 
+export function deleteDocument(knowledgeBaseId: string, documentId: string): Promise<void> {
+  return apiRequest(
+    workspacePath(`/knowledge-bases/${knowledgeBaseId}/documents/${documentId}`),
+    { method: "DELETE" },
+  );
+}
+
 export function updateDocument(
   knowledgeBaseId: string,
   documentId: string,

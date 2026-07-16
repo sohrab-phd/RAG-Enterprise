@@ -189,6 +189,7 @@ export function KnowledgeBrowser(): React.JSX.Element {
           ) : null}
           {contentsQuery.data ? (
             <DocumentList
+              knowledgeBaseId={kbId}
               folders={contentsQuery.data.folders}
               documents={contentsQuery.data.documents}
               selectedDocumentId={documentId}
@@ -201,6 +202,9 @@ export function KnowledgeBrowser(): React.JSX.Element {
               onSelectDocument={(id) => {
                 setSelection({ documentId: id });
                 setMobilePane("detail");
+              }}
+              onClearDocumentSelection={() => {
+                setSelection({ documentId: null });
               }}
             />
           ) : null}

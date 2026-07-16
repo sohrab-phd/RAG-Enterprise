@@ -73,7 +73,7 @@ def register_knowledge_handlers(
     )
     command_dispatcher.register(
         cmd.DeleteDocumentCommand,
-        ch.DeleteDocumentHandler(session_factory),
+        ch.DeleteDocumentHandler(session_factory, file_storage),
     )
     command_dispatcher.register(
         cmd.MoveDocumentCommand,

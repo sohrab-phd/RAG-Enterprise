@@ -283,6 +283,13 @@ class EmbeddingRepository(SQLAlchemyRepository[Embedding]):
         )
         return int(result.rowcount or 0)
 
+    async def delete_all_for_document(self, document_id: uuid.UUID) -> int:
+        chunk_ids = select(Chunk.id).where(Chunk.document_id == document_id)
+        result = await self._session.execute(
+            delete(Embedding).where(Embedding.chunk_id.in_(chunk_ids))
+        )
+        return int(result.rowcount or 0)
+
 
 def _cosine_similarity(left: list[float], right: list[float]) -> float:
     if len(left) != len(right) or not left:

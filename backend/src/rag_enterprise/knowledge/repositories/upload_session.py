@@ -41,8 +41,22 @@ class UploadSessionRepository(SQLAlchemyRepository[UploadSession]):
         rows = (await self._session.scalars(statement)).all()
         return [key for key in rows if key]
 
+    async def list_staging_keys_for_document(self, document_id: uuid.UUID) -> list[str]:
+        statement = select(UploadSession.storage_key_staging).where(
+            UploadSession.document_id == document_id,
+            UploadSession.storage_key_staging.is_not(None),
+        )
+        rows = (await self._session.scalars(statement)).all()
+        return [key for key in rows if key]
+
     async def delete_all_for_knowledge_base(self, knowledge_base_id: uuid.UUID) -> int:
         result = await self._session.execute(
             delete(UploadSession).where(UploadSession.knowledge_base_id == knowledge_base_id)
+        )
+        return int(result.rowcount or 0)
+
+    async def delete_all_for_document(self, document_id: uuid.UUID) -> int:
+        result = await self._session.execute(
+            delete(UploadSession).where(UploadSession.document_id == document_id)
         )
         return int(result.rowcount or 0)

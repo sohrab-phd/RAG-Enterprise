@@ -83,9 +83,29 @@ class DocumentVersionRepository(SQLAlchemyRepository[DocumentVersion]):
                 keys.append(extracted)
         return keys
 
+    async def list_storage_keys_for_document(self, document_id: uuid.UUID) -> list[str]:
+        statement = select(
+            DocumentVersion.storage_key_original,
+            DocumentVersion.storage_key_extracted,
+        ).where(DocumentVersion.document_id == document_id)
+        rows = (await self._session.execute(statement)).all()
+        keys: list[str] = []
+        for original, extracted in rows:
+            if original:
+                keys.append(original)
+            if extracted:
+                keys.append(extracted)
+        return keys
+
     async def delete_all_for_knowledge_base(self, knowledge_base_id: uuid.UUID) -> int:
         result = await self._session.execute(
             delete(DocumentVersion).where(DocumentVersion.knowledge_base_id == knowledge_base_id)
+        )
+        return int(result.rowcount or 0)
+
+    async def delete_all_for_document(self, document_id: uuid.UUID) -> int:
+        result = await self._session.execute(
+            delete(DocumentVersion).where(DocumentVersion.document_id == document_id)
         )
         return int(result.rowcount or 0)
 

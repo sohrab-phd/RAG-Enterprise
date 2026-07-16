@@ -66,3 +66,9 @@ class ChunkRepository(SQLAlchemyRepository[Chunk]):
             delete(Chunk).where(Chunk.knowledge_base_id == knowledge_base_id)
         )
         return int(result.rowcount or 0)
+
+    async def delete_all_for_document(self, document_id: uuid.UUID) -> int:
+        result = await self._session.execute(
+            delete(Chunk).where(Chunk.document_id == document_id)
+        )
+        return int(result.rowcount or 0)
