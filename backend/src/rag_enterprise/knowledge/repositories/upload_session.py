@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from typing import cast
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from rag_enterprise.db.repositories.base import SQLAlchemyRepository
@@ -32,3 +32,17 @@ class UploadSessionRepository(SQLAlchemyRepository[UploadSession]):
             UploadSession.id == upload_id,
         )
         return cast(UploadSession | None, await self._session.scalar(statement))
+
+    async def list_staging_keys_for_kb(self, knowledge_base_id: uuid.UUID) -> list[str]:
+        statement = select(UploadSession.storage_key_staging).where(
+            UploadSession.knowledge_base_id == knowledge_base_id,
+            UploadSession.storage_key_staging.is_not(None),
+        )
+        rows = (await self._session.scalars(statement)).all()
+        return [key for key in rows if key]
+
+    async def delete_all_for_knowledge_base(self, knowledge_base_id: uuid.UUID) -> int:
+        result = await self._session.execute(
+            delete(UploadSession).where(UploadSession.knowledge_base_id == knowledge_base_id)
+        )
+        return int(result.rowcount or 0)

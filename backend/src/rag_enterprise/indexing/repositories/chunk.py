@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from collections.abc import Sequence
 
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from rag_enterprise.db.repositories.base import SQLAlchemyRepository
@@ -60,3 +60,9 @@ class ChunkRepository(SQLAlchemyRepository[Chunk]):
 
     async def get_by_id(self, chunk_id: uuid.UUID) -> Chunk | None:
         return await self.get(chunk_id)
+
+    async def delete_all_for_knowledge_base(self, knowledge_base_id: uuid.UUID) -> int:
+        result = await self._session.execute(
+            delete(Chunk).where(Chunk.knowledge_base_id == knowledge_base_id)
+        )
+        return int(result.rowcount or 0)

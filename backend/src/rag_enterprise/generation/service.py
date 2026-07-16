@@ -32,7 +32,7 @@ from rag_enterprise.generation.prompt_builder import PromptBuilder, PromptBuilde
 from rag_enterprise.generation.repositories import ConversationRepository, MessageRepository
 from rag_enterprise.generation.templates import v1
 from rag_enterprise.knowledge.repositories.scope import TenantScope
-from rag_enterprise.retrieval.exceptions import RetrievalError
+from rag_enterprise.retrieval.exceptions import KnowledgeBaseNotFoundError, RetrievalError
 from rag_enterprise.retrieval.models import SearchRequest
 from rag_enterprise.retrieval.service import RetrievalService
 
@@ -105,6 +105,8 @@ class GenerationService:
                     permissions=request.permissions,
                 )
             )
+        except KnowledgeBaseNotFoundError:
+            raise
         except RetrievalError as exc:
             result = GenerationResult(
                 status=GenerationStatus.FAILED,

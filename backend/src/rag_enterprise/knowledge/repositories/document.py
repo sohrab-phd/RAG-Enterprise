@@ -6,7 +6,7 @@ import uuid
 from collections.abc import Sequence
 from typing import cast
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from rag_enterprise.db.repositories.base import SQLAlchemyRepository
@@ -155,6 +155,24 @@ class DocumentRepository(SQLAlchemyRepository[Document]):
                 deleted_by_user_id=user_id,
             )
         )
+
+    async def has_legal_hold_in_kb(self, knowledge_base_id: uuid.UUID) -> bool:
+        statement = (
+            select(func.count())
+            .select_from(Document)
+            .where(
+                Document.knowledge_base_id == knowledge_base_id,
+                Document.legal_hold.is_(True),
+            )
+        )
+        result = await self._session.scalar(statement)
+        return bool(result)
+
+    async def hard_delete_all_in_kb(self, knowledge_base_id: uuid.UUID) -> int:
+        result = await self._session.execute(
+            delete(Document).where(Document.knowledge_base_id == knowledge_base_id)
+        )
+        return int(result.rowcount or 0)
 
     def _scoped_select(
         self,

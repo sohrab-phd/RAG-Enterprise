@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loader2, Trash2 } from "lucide-react";
 import * as React from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
@@ -12,8 +13,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { listKnowledgeBases, publishKnowledgeBase } from "@/features/knowledge/api";
+import {
+  deleteKnowledgeBase,
+  listKnowledgeBases,
+  publishKnowledgeBase,
+} from "@/features/knowledge/api";
 import { CreateKnowledgeBaseDialog } from "@/features/knowledge/components/create-kb-dialog";
+import { DeleteKnowledgeBaseDialog } from "@/features/knowledge/components/delete-kb-dialog";
 import { EmptyState } from "@/features/knowledge/components/empty-state";
 import { ErrorState } from "@/features/knowledge/components/error-state";
 import { TableSkeleton } from "@/features/knowledge/components/skeletons";
@@ -29,6 +35,12 @@ export function KnowledgeBaseList(): React.JSX.Element {
   const [createOpen, setCreateOpen] = React.useState(false);
   const [publishError, setPublishError] = React.useState<string | null>(null);
   const [publishingId, setPublishingId] = React.useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = React.useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [deleteError, setDeleteError] = React.useState<string | null>(null);
+  const [successToast, setSuccessToast] = React.useState<string | null>(null);
   const page = Number(searchParams.get("page") ?? "1") || 1;
   const status = searchParams.get("status") ?? "all";
   const qParam = searchParams.get("q") ?? "";
@@ -49,6 +61,23 @@ export function KnowledgeBaseList(): React.JSX.Element {
     },
     onSettled: () => {
       setPublishingId(null);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteKnowledgeBase,
+    onMutate: () => {
+      setDeleteError(null);
+    },
+    onSuccess: async () => {
+      const name = deleteTarget?.name ?? "Knowledge base";
+      setDeleteTarget(null);
+      setSuccessToast(`Deleted “${name}”`);
+      await queryClient.invalidateQueries({ queryKey: knowledgeKeys.bases() });
+      window.setTimeout(() => setSuccessToast(null), 4000);
+    },
+    onError: (error) => {
+      setDeleteError(isApiError(error) ? error.message : "Delete failed");
     },
   });
 
@@ -134,6 +163,16 @@ export function KnowledgeBaseList(): React.JSX.Element {
           {publishError}
         </p>
       ) : null}
+      {deleteError ? (
+        <p className="mb-3 text-sm text-destructive" role="alert">
+          {deleteError}
+        </p>
+      ) : null}
+      {successToast ? (
+        <p className="mb-3 text-sm text-foreground" role="status">
+          {successToast}
+        </p>
+      ) : null}
 
       {!isInitialLoading && !query.isError && items.length === 0 ? (
         <EmptyState
@@ -179,17 +218,36 @@ export function KnowledgeBaseList(): React.JSX.Element {
                     {formatRelativeTime(kb.updated_at)}
                   </td>
                   <td className="px-4 py-3">
-                    {kb.status === "draft" ? (
+                    <div className="flex items-center gap-2">
+                      {kb.status === "draft" ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={publishingId === kb.id || deleteMutation.isPending}
+                          onClick={() => publishMutation.mutate(kb.id)}
+                        >
+                          {publishingId === kb.id ? "Publishing…" : "Publish"}
+                        </Button>
+                      ) : null}
                       <Button
                         type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={publishingId === kb.id}
-                        onClick={() => publishMutation.mutate(kb.id)}
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Delete ${kb.name}`}
+                        disabled={deleteMutation.isPending}
+                        onClick={() => {
+                          setDeleteError(null);
+                          setDeleteTarget({ id: kb.id, name: kb.name });
+                        }}
                       >
-                        {publishingId === kb.id ? "Publishing…" : "Publish"}
+                        {deleteMutation.isPending && deleteTarget?.id === kb.id ? (
+                          <Loader2 className="size-4 animate-spin" aria-hidden />
+                        ) : (
+                          <Trash2 className="size-4" aria-hidden />
+                        )}
                       </Button>
-                    ) : null}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -235,6 +293,21 @@ export function KnowledgeBaseList(): React.JSX.Element {
       ) : null}
 
       <CreateKnowledgeBaseDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <DeleteKnowledgeBaseDialog
+        open={deleteTarget !== null}
+        knowledgeBaseName={deleteTarget?.name ?? ""}
+        pending={deleteMutation.isPending}
+        onOpenChange={(open) => {
+          if (!open && !deleteMutation.isPending) {
+            setDeleteTarget(null);
+          }
+        }}
+        onConfirm={() => {
+          if (deleteTarget) {
+            deleteMutation.mutate(deleteTarget.id);
+          }
+        }}
+      />
     </section>
   );
 }

@@ -85,12 +85,42 @@ def _read_dotenv_value(path: Path, key: str, default: str) -> str:
     return default
 
 
-def _wait_http_ready(url: str, *, timeout: float, label: str) -> float:
+_BACKEND_BIND_FAIL_MARKERS = (
+    "winerror 10013",
+    "access a socket in a way forbidden",
+    "error while attempting to bind",
+    "address already in use",
+)
+
+
+def _lines_indicate_bind_failure(lines: list[str]) -> str | None:
+    for line in reversed(lines[-80:]):
+        lowered = line.lower()
+        if any(marker in lowered for marker in _BACKEND_BIND_FAIL_MARKERS):
+            return line.strip()
+    return None
+
+
+def _wait_http_ready(
+    url: str,
+    *,
+    timeout: float,
+    label: str,
+    process: ManagedProcess | None = None,
+) -> float:
     console.step(f"Waiting for {label}")
     started = time.perf_counter()
     deadline = started + timeout
     last_status = "…"
     while time.perf_counter() < deadline:
+        if process is not None:
+            bind_err = _lines_indicate_bind_failure(process.captured_lines)
+            if bind_err is not None:
+                raise RuntimeError(
+                    f"{label} failed to bind a listening socket. Last log: {bind_err}"
+                )
+            if process.poll() is not None:
+                raise RuntimeError(f"{label} process exited before becoming ready")
         try:
             with urlopen(Request(url, method="GET"), timeout=5) as response:  # noqa: S310
                 status = int(getattr(response, "status", 200) or 200)
@@ -279,6 +309,7 @@ def main() -> int:
                 f"{backend_url}/api/v1/ready",
                 timeout=300,
                 label="backend /ready",
+                process=state.backend,
             )
         except Exception:
             if state.backend.poll() is not None:
@@ -299,6 +330,9 @@ def main() -> int:
             "FRONTEND",
             ["npm", "run", "dev", "--", "--host", "127.0.0.1", "--port", str(frontend_port)],
             cwd=frontend_root,
+            env={
+                "VITE_API_BASE_URL": f"http://127.0.0.1:{backend_port}",
+            },
         )
         try:
             url, _ = _wait_for_vite_url(

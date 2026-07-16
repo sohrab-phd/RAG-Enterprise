@@ -13,6 +13,12 @@ def test_ok_result_is_successful() -> None:
     assert result.unwrap() == "value"
 
 
+def test_ok_none_result_unwraps_to_none() -> None:
+    result = Result.ok(None)
+    assert result.is_success
+    assert result.unwrap() is None
+
+
 def test_fail_result_is_failure() -> None:
     error = ApplicationError(code="test_error", message="failed")
     result = Result.fail(error)

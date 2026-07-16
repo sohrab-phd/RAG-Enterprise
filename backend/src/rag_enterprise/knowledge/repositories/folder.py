@@ -6,7 +6,7 @@ import uuid
 from collections.abc import Sequence
 from typing import cast
 
-from sqlalchemy import Select, func, select, update
+from sqlalchemy import Select, delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from rag_enterprise.db.repositories.base import SQLAlchemyRepository
@@ -119,6 +119,18 @@ class FolderRepository(SQLAlchemyRepository[Folder]):
             )
             .values(status=FolderStatus.ARCHIVED, archived_at=datetime.now(UTC))
         )
+
+    async def hard_delete_all_in_kb(self, knowledge_base_id: uuid.UUID) -> int:
+        # Break self-referential parent links before deleting rows.
+        await self._session.execute(
+            update(Folder)
+            .where(Folder.knowledge_base_id == knowledge_base_id)
+            .values(parent_folder_id=None)
+        )
+        result = await self._session.execute(
+            delete(Folder).where(Folder.knowledge_base_id == knowledge_base_id)
+        )
+        return int(result.rowcount or 0)
 
     def _scoped_select(
         self,

@@ -6,7 +6,7 @@ import uuid
 from collections.abc import Sequence
 from typing import cast
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from rag_enterprise.db.repositories.base import SQLAlchemyRepository
@@ -31,6 +31,12 @@ class ConversationRepository(SQLAlchemyRepository[Conversation]):
             Conversation.status == ConversationStatus.ACTIVE,
         )
         return cast(Conversation | None, await self._session.scalar(statement))
+
+    async def delete_all_for_knowledge_base(self, knowledge_base_id: uuid.UUID) -> int:
+        result = await self._session.execute(
+            delete(Conversation).where(Conversation.knowledge_base_id == knowledge_base_id)
+        )
+        return int(result.rowcount or 0)
 
 
 class MessageRepository(SQLAlchemyRepository[Message]):
@@ -71,3 +77,9 @@ class MessageRepository(SQLAlchemyRepository[Message]):
             .order_by(Message.sequence_number.asc())
         )
         return (await self._session.scalars(statement)).all()
+
+    async def delete_all_for_knowledge_base(self, knowledge_base_id: uuid.UUID) -> int:
+        result = await self._session.execute(
+            delete(Message).where(Message.knowledge_base_id == knowledge_base_id)
+        )
+        return int(result.rowcount or 0)

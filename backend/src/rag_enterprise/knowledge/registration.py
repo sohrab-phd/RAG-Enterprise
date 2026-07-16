@@ -43,7 +43,7 @@ def register_knowledge_handlers(
     )
     command_dispatcher.register(
         cmd.DeleteKnowledgeBaseCommand,
-        ch.DeleteKnowledgeBaseHandler(session_factory),
+        ch.DeleteKnowledgeBaseHandler(session_factory, file_storage),
     )
     command_dispatcher.register(cmd.CreateFolderCommand, ch.CreateFolderHandler(session_factory))
     command_dispatcher.register(cmd.MoveFolderCommand, ch.MoveFolderHandler(session_factory))

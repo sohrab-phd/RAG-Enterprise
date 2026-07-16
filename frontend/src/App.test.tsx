@@ -115,6 +115,75 @@ describe("knowledge module", () => {
     expect(screen.getByText("active")).toBeInTheDocument();
   });
 
+  it("deletes a knowledge base after confirmation", async () => {
+    const user = userEvent.setup();
+    const kbId = "018f0000-0000-7000-8000-0000000000b1";
+    let deleted = false;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = (init?.method ?? "GET").toUpperCase();
+      if (method === "DELETE" && url.includes(`/knowledge-bases/${kbId}`)) {
+        deleted = true;
+        return new Response(null, { status: 204 });
+      }
+      if (url.includes("/knowledge-bases?") || url.endsWith("/knowledge-bases")) {
+        return Response.json({
+          success: true,
+          data: {
+            items: deleted
+              ? []
+              : [
+                  {
+                    id: kbId,
+                    name: "Policies KB",
+                    status: "active",
+                    default_language: "fa",
+                    visibility_policy: "workspace",
+                    document_count: 42,
+                    created_at: "2026-07-14T00:00:00Z",
+                    updated_at: "2026-07-14T12:00:00Z",
+                  },
+                ],
+            pagination: {
+              page: 1,
+              page_size: 20,
+              total_items: deleted ? 0 : 1,
+              total_pages: deleted ? 0 : 1,
+              has_next: false,
+              has_previous: false,
+            },
+          },
+        });
+      }
+      return Response.json(
+        { success: false, error: { code: "not_found", message: "missing" } },
+        { status: 404 },
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderApp("/knowledge");
+    expect(await screen.findByRole("link", { name: "Policies KB" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Delete Policies KB" }));
+    expect(await screen.findByRole("heading", { name: "Delete Knowledge Base?" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    await waitFor(() => {
+      expect(screen.queryByRole("heading", { name: "Delete Knowledge Base?" })).not.toBeInTheDocument();
+    });
+    expect(deleted).toBe(false);
+
+    await user.click(screen.getByRole("button", { name: "Delete Policies KB" }));
+    await user.click(await screen.findByRole("button", { name: "Delete" }));
+
+    expect(await screen.findByText(/Deleted/)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByRole("link", { name: "Policies KB" })).not.toBeInTheDocument();
+    });
+    expect(deleted).toBe(true);
+  });
+
   it("shows empty state when no knowledge bases exist", async () => {
     vi.stubGlobal(
       "fetch",

@@ -6,7 +6,7 @@ import uuid
 from collections.abc import Sequence
 from typing import cast
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from rag_enterprise.db.repositories.base import SQLAlchemyRepository
@@ -68,6 +68,26 @@ class DocumentVersionRepository(SQLAlchemyRepository[DocumentVersion]):
             DocumentVersion.upload_session_id == upload_session_id
         )
         return cast(DocumentVersion | None, await self._session.scalar(statement))
+
+    async def list_storage_keys_for_kb(self, knowledge_base_id: uuid.UUID) -> list[str]:
+        statement = select(
+            DocumentVersion.storage_key_original,
+            DocumentVersion.storage_key_extracted,
+        ).where(DocumentVersion.knowledge_base_id == knowledge_base_id)
+        rows = (await self._session.execute(statement)).all()
+        keys: list[str] = []
+        for original, extracted in rows:
+            if original:
+                keys.append(original)
+            if extracted:
+                keys.append(extracted)
+        return keys
+
+    async def delete_all_for_knowledge_base(self, knowledge_base_id: uuid.UUID) -> int:
+        result = await self._session.execute(
+            delete(DocumentVersion).where(DocumentVersion.knowledge_base_id == knowledge_base_id)
+        )
+        return int(result.rowcount or 0)
 
     def _scoped_select(
         self,

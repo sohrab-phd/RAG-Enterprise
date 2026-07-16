@@ -41,9 +41,9 @@ class Result[T]:
         return cls(value=None, error=error)
 
     def unwrap(self) -> T:
-        if self.is_failure or self.value is None:
+        if self.is_failure:
             raise ValueError("Cannot unwrap a failed result")
-        return self.value
+        return self.value  # type: ignore[return-value]
 
     def map(self, func: Callable[[T], T]) -> Result[T]:
         if self.is_failure:

@@ -100,6 +100,21 @@ function ChatSessionPane({
     queryFn: ({ signal }) => listKnowledgeBases({ page: 1, pageSize: 100, signal }),
   });
 
+  const knowledgeBases = kbQuery.data?.items ?? [];
+
+  React.useEffect(() => {
+    if (kbQuery.isLoading || kbQuery.isError) {
+      return;
+    }
+    if (knowledgeBaseId === null) {
+      return;
+    }
+    const stillExists = knowledgeBases.some((kb) => kb.id === knowledgeBaseId);
+    if (!stillExists) {
+      setKnowledgeBaseId(null);
+    }
+  }, [kbQuery.isError, kbQuery.isLoading, knowledgeBaseId, knowledgeBases]);
+
   const selectedAssistant =
     messages.find((item) => item.id === selectedAssistantId) ??
     [...messages].reverse().find((item) => item.role === "assistant") ??
@@ -344,7 +359,7 @@ function ChatSessionPane({
             </p>
           ) : null}
           <PromptComposer
-            knowledgeBases={kbQuery.data?.items ?? []}
+            knowledgeBases={knowledgeBases}
             knowledgeBasesLoading={kbQuery.isLoading}
             knowledgeBaseId={knowledgeBaseId}
             onKnowledgeBaseChange={setKnowledgeBaseId}

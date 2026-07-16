@@ -10,6 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from rag_enterprise.application.common import Result
 from rag_enterprise.application.interfaces.file_storage import FileStorage
+from rag_enterprise.generation.repositories import ConversationRepository, MessageRepository
+from rag_enterprise.indexing.repositories import ChunkRepository, EmbeddingRepository
 from rag_enterprise.knowledge import commands as cmd
 from rag_enterprise.knowledge.authorization import conflict, not_found, require_permission
 from rag_enterprise.knowledge.constants import MAX_FOLDER_DEPTH, UPLOAD_SESSION_TTL_HOURS
@@ -197,28 +199,61 @@ class RestoreKnowledgeBaseHandler:
 
 
 class DeleteKnowledgeBaseHandler:
-    def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
+    def __init__(
+        self,
+        session_factory: async_sessionmaker[AsyncSession],
+        file_storage: FileStorage,
+    ) -> None:
         self._session_factory = session_factory
+        self._file_storage = file_storage
 
     async def handle(self, command: cmd.DeleteKnowledgeBaseCommand) -> Result[None]:
         auth = require_permission(command.actor, "knowledge_base:manage")
         if auth.is_failure:
             return Result.fail(auth.error)  # type: ignore[arg-type]
         scope = _scope(command)
+        storage_keys: list[str] = []
         async with KnowledgeUnitOfWork(self._session_factory) as uow:
             kb = await uow.knowledge_bases.get_scoped(scope, command.knowledge_base_id)
             if kb is None:
                 return Result.fail(not_found("Knowledge base").error)  # type: ignore[arg-type]
-            if kb.status == KnowledgeBaseStatus.DELETED:
-                return Result.ok(None)
-            now = datetime.now(UTC)
-            kb.status = KnowledgeBaseStatus.DELETED
-            kb.deleted_at = now
-            kb.deleted_by_user_id = command.actor.user_id
-            kb.row_version += 1
-            await uow.documents.soft_delete_all_in_kb(kb.id, command.actor.user_id)
+            if await uow.documents.has_legal_hold_in_kb(kb.id):
+                return Result.fail(
+                    conflict("Knowledge base has documents under legal hold").error
+                )  # type: ignore[arg-type]
+
+            storage_keys.extend(await uow.document_versions.list_storage_keys_for_kb(kb.id))
+            storage_keys.extend(await uow.upload_sessions.list_staging_keys_for_kb(kb.id))
+
+            messages = MessageRepository(uow.session)
+            conversations = ConversationRepository(uow.session)
+            embeddings = EmbeddingRepository(uow.session)
+            chunks = ChunkRepository(uow.session)
+
+            await messages.delete_all_for_knowledge_base(kb.id)
+            await conversations.delete_all_for_knowledge_base(kb.id)
+            await embeddings.delete_all_for_knowledge_base(kb.id)
+            await chunks.delete_all_for_knowledge_base(kb.id)
+            await uow.document_versions.delete_all_for_knowledge_base(kb.id)
+            await uow.upload_sessions.delete_all_for_knowledge_base(kb.id)
+            await uow.documents.hard_delete_all_in_kb(kb.id)
+            await uow.folders.hard_delete_all_in_kb(kb.id)
+            await uow.knowledge_bases.remove(kb)
             await uow.commit()
-            return Result.ok(None)
+
+        await self._best_effort_delete_files(storage_keys)
+        return Result.ok(None)
+
+    async def _best_effort_delete_files(self, keys: list[str]) -> None:
+        seen: set[str] = set()
+        for key in keys:
+            if not key or key in seen:
+                continue
+            seen.add(key)
+            try:
+                await self._file_storage.delete(key=key)
+            except Exception:  # noqa: BLE001 — missing/corrupt files must not fail deletion
+                continue
 
 
 class CreateFolderHandler:

@@ -59,6 +59,12 @@ export function publishKnowledgeBase(knowledgeBaseId: string): Promise<Knowledge
   });
 }
 
+export function deleteKnowledgeBase(knowledgeBaseId: string): Promise<void> {
+  return apiRequest(workspacePath(`/knowledge-bases/${knowledgeBaseId}`), {
+    method: "DELETE",
+  });
+}
+
 export function getTree(
   knowledgeBaseId: string,
   params: { readonly depth?: number; readonly signal?: AbortSignal } = {},

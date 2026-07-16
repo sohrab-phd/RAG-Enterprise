@@ -15,6 +15,7 @@ from rag_enterprise.generation.exceptions import GenerationError, InvalidQuestio
 from rag_enterprise.generation.models import GenerationRequest, GenerationStatus
 from rag_enterprise.knowledge.api.dependencies import ActorDep
 from rag_enterprise.retrieval.api.schemas import RetrievedChunkDTO
+from rag_enterprise.retrieval.exceptions import KnowledgeBaseNotFoundError
 
 router = APIRouter(prefix="/workspaces/{workspace_id}", tags=["chat"])
 
@@ -46,6 +47,14 @@ async def chat(
                 top_k=body.top_k,
             )
         )
+    except KnowledgeBaseNotFoundError as exc:
+        raise ApplicationException(
+            ApplicationError(
+                code=ErrorCode.NOT_FOUND,
+                message=str(exc),
+                details={"failure_reason": exc.code},
+            )
+        ) from exc
     except InvalidQuestionError as exc:
         raise ApplicationException(
             ApplicationError(

@@ -560,6 +560,24 @@ validation mentions `FILE_STORAGE_ROOT` / `EVALUATION_STORAGE_ROOT`.
 | 8000 | Backend API |
 | 5173 | Frontend Vite |
 
+### Windows WinError 10013 / excluded ports
+
+**Symptom:** Port check says backend port is free, then uvicorn logs
+`[WinError 10013] An attempt was made to access a socket in a way forbidden by its
+access permissions` and `/ready` never responds. On Windows, Hyper-V / WinNAT often
+reserves ranges that include **8000** and **8080** (check with
+`netsh interface ipv4 show excludedportrange protocol=tcp`).
+
+**Fix:** Set a bindable port in `backend/.env` (and root `.env` if present), for example:
+
+```env
+BACKEND_PORT=8300
+VITE_API_BASE_URL=http://localhost:8300
+```
+
+Then re-run `uv run python run.py`. The launcher fails early if the configured port
+cannot be bound and suggests an available alternative.
+
 ### Backend imports / wrong directory
 
 **Symptom:** `ModuleNotFoundError` or uv cannot find the project.

@@ -7,7 +7,7 @@ import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from sqlalchemy import Float, Select, select, update
+from sqlalchemy import Float, Select, delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from rag_enterprise.db.repositories.base import SQLAlchemyRepository
@@ -276,6 +276,12 @@ class EmbeddingRepository(SQLAlchemyRepository[Embedding]):
             )
         scored.sort(key=lambda hit: (-hit.score, hit.document_id.hex, hit.chunk_index))
         return scored[:top_k]
+
+    async def delete_all_for_knowledge_base(self, knowledge_base_id: uuid.UUID) -> int:
+        result = await self._session.execute(
+            delete(Embedding).where(Embedding.knowledge_base_id == knowledge_base_id)
+        )
+        return int(result.rowcount or 0)
 
 
 def _cosine_similarity(left: list[float], right: list[float]) -> float:
