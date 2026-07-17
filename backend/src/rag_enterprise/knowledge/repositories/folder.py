@@ -132,6 +132,17 @@ class FolderRepository(SQLAlchemyRepository[Folder]):
         )
         return int(result.rowcount or 0)
 
+    async def hard_delete_subtree(self, folder_ids: Sequence[uuid.UUID]) -> int:
+        if not folder_ids:
+            return 0
+        ids = list(folder_ids)
+        # Break self-referential parent links before deleting rows.
+        await self._session.execute(
+            update(Folder).where(Folder.id.in_(ids)).values(parent_folder_id=None)
+        )
+        result = await self._session.execute(delete(Folder).where(Folder.id.in_(ids)))
+        return int(result.rowcount or 0)
+
     def _scoped_select(
         self,
         scope: TenantScope,

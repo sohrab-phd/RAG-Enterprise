@@ -168,6 +168,35 @@ class DocumentRepository(SQLAlchemyRepository[Document]):
         result = await self._session.scalar(statement)
         return bool(result)
 
+    async def list_ids_in_folders(self, folder_ids: Sequence[uuid.UUID]) -> list[uuid.UUID]:
+        if not folder_ids:
+            return []
+        statement = select(Document.id).where(Document.folder_id.in_(list(folder_ids)))
+        result = await self._session.scalars(statement)
+        return list(result.all())
+
+    async def has_legal_hold_in_folders(self, folder_ids: Sequence[uuid.UUID]) -> bool:
+        if not folder_ids:
+            return False
+        statement = (
+            select(func.count())
+            .select_from(Document)
+            .where(
+                Document.folder_id.in_(list(folder_ids)),
+                Document.legal_hold.is_(True),
+            )
+        )
+        result = await self._session.scalar(statement)
+        return bool(result)
+
+    async def hard_delete_in_folders(self, folder_ids: Sequence[uuid.UUID]) -> int:
+        if not folder_ids:
+            return 0
+        result = await self._session.execute(
+            delete(Document).where(Document.folder_id.in_(list(folder_ids)))
+        )
+        return int(result.rowcount or 0)
+
     async def hard_delete_all_in_kb(self, knowledge_base_id: uuid.UUID) -> int:
         result = await self._session.execute(
             delete(Document).where(Document.knowledge_base_id == knowledge_base_id)

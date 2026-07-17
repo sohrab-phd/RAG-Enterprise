@@ -1,6 +1,7 @@
-import { ChevronDown, ChevronRight, Folder } from "lucide-react";
+import { ChevronDown, ChevronRight, Folder, Loader2, Trash2 } from "lucide-react";
 import * as React from "react";
 
+import { Button } from "@/components/ui/button";
 import type { TreeFolderNode } from "@/features/knowledge/types";
 import { cn } from "@/lib/utils";
 
@@ -8,6 +9,9 @@ type FolderTreeProps = {
   readonly folders: readonly TreeFolderNode[];
   readonly selectedFolderId: string | null;
   readonly onSelectFolder: (folderId: string | null) => void;
+  readonly onRequestDeleteFolder?: (folderId: string, folderName: string) => void;
+  readonly deletingFolderId?: string | null;
+  readonly deletePending?: boolean;
 };
 
 type NodeProps = {
@@ -15,12 +19,24 @@ type NodeProps = {
   readonly depth: number;
   readonly selectedFolderId: string | null;
   readonly onSelectFolder: (folderId: string | null) => void;
+  readonly onRequestDeleteFolder?: (folderId: string, folderName: string) => void;
+  readonly deletingFolderId?: string | null;
+  readonly deletePending?: boolean;
 };
 
-function TreeNode({ node, depth, selectedFolderId, onSelectFolder }: NodeProps): React.JSX.Element {
+function TreeNode({
+  node,
+  depth,
+  selectedFolderId,
+  onSelectFolder,
+  onRequestDeleteFolder,
+  deletingFolderId,
+  deletePending,
+}: NodeProps): React.JSX.Element {
   const [expanded, setExpanded] = React.useState(depth < 2);
   const hasChildren = node.children.length > 0;
   const selected = selectedFolderId === node.id;
+  const isDeleting = deletePending && deletingFolderId === node.id;
 
   return (
     <li>
@@ -61,6 +77,26 @@ function TreeNode({ node, depth, selectedFolderId, onSelectFolder }: NodeProps):
             {node.document_count}
           </span>
         </button>
+        {onRequestDeleteFolder ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-7 shrink-0 opacity-70 group-hover:opacity-100"
+            aria-label={`Delete folder ${node.name}`}
+            disabled={deletePending}
+            onClick={(event) => {
+              event.stopPropagation();
+              onRequestDeleteFolder(node.id, node.name);
+            }}
+          >
+            {isDeleting ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden />
+            ) : (
+              <Trash2 className="size-4" aria-hidden />
+            )}
+          </Button>
+        ) : null}
       </div>
       {hasChildren && expanded ? (
         <ul className="space-y-0.5">
@@ -71,6 +107,9 @@ function TreeNode({ node, depth, selectedFolderId, onSelectFolder }: NodeProps):
               depth={depth + 1}
               selectedFolderId={selectedFolderId}
               onSelectFolder={onSelectFolder}
+              onRequestDeleteFolder={onRequestDeleteFolder}
+              deletingFolderId={deletingFolderId}
+              deletePending={deletePending}
             />
           ))}
         </ul>
@@ -83,6 +122,9 @@ export function FolderTree({
   folders,
   selectedFolderId,
   onSelectFolder,
+  onRequestDeleteFolder,
+  deletingFolderId,
+  deletePending,
 }: FolderTreeProps): React.JSX.Element {
   return (
     <div className="space-y-1">
@@ -106,6 +148,9 @@ export function FolderTree({
             depth={0}
             selectedFolderId={selectedFolderId}
             onSelectFolder={onSelectFolder}
+            onRequestDeleteFolder={onRequestDeleteFolder}
+            deletingFolderId={deletingFolderId}
+            deletePending={deletePending}
           />
         ))}
       </ul>

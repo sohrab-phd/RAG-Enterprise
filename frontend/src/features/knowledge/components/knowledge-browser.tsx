@@ -1,11 +1,17 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import * as React from "react";
 
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
-import { getFolderContents, getKnowledgeBase, getTree } from "@/features/knowledge/api";
+import {
+  deleteFolder,
+  getFolderContents,
+  getKnowledgeBase,
+  getTree,
+} from "@/features/knowledge/api";
 import { CreateFolderDialog } from "@/features/knowledge/components/create-folder-dialog";
+import { DeleteFolderDialog } from "@/features/knowledge/components/delete-folder-dialog";
 import { DocumentInspector } from "@/features/knowledge/components/document-inspector";
 import { DocumentList } from "@/features/knowledge/components/document-list";
 import { EmptyState } from "@/features/knowledge/components/empty-state";
@@ -15,6 +21,7 @@ import { TableSkeleton, TreeSkeleton } from "@/features/knowledge/components/ske
 import { UploadDrawer } from "@/features/knowledge/components/upload-drawer";
 import { knowledgeKeys } from "@/features/knowledge/query-keys";
 import type { TreeFolderNode } from "@/features/knowledge/types";
+import { isApiError } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 
 function findFolderPath(folders: readonly TreeFolderNode[], folderId: string | null): string {
@@ -37,15 +44,50 @@ function findFolderPath(folders: readonly TreeFolderNode[], folderId: string | n
   return path.length > 0 ? path.join(" / ") : "Folder";
 }
 
+function findFolderNode(
+  folders: readonly TreeFolderNode[],
+  folderId: string,
+): TreeFolderNode | null {
+  for (const node of folders) {
+    if (node.id === folderId) return node;
+    const nested = findFolderNode(node.children, folderId);
+    if (nested) return nested;
+  }
+  return null;
+}
+
+function collectSubtreeIds(node: TreeFolderNode): string[] {
+  return [node.id, ...node.children.flatMap(collectSubtreeIds)];
+}
+
+function isFolderInDeletedSubtree(
+  folders: readonly TreeFolderNode[],
+  deletedFolderId: string,
+  currentFolderId: string | null,
+): boolean {
+  if (!currentFolderId) return false;
+  if (currentFolderId === deletedFolderId) return true;
+  const deletedNode = findFolderNode(folders, deletedFolderId);
+  if (!deletedNode) return false;
+  return collectSubtreeIds(deletedNode).includes(currentFolderId);
+}
+
 export function KnowledgeBrowser(): React.JSX.Element {
   const { kbId = "" } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
   const folderId = searchParams.get("folderId");
   const documentId = searchParams.get("documentId");
   const [listSearch, setListSearch] = React.useState("");
   const [uploadOpen, setUploadOpen] = React.useState(false);
   const [folderOpen, setFolderOpen] = React.useState(false);
   const [mobilePane, setMobilePane] = React.useState<"tree" | "list" | "detail">("list");
+  const [deleteFolderTarget, setDeleteFolderTarget] = React.useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [folderDeleteError, setFolderDeleteError] = React.useState<string | null>(null);
+  const [folderSuccessToast, setFolderSuccessToast] = React.useState<string | null>(null);
 
   const kbQuery = useQuery({
     queryKey: knowledgeKeys.baseDetail(kbId),
@@ -85,6 +127,37 @@ export function KnowledgeBrowser(): React.JSX.Element {
     setSearchParams(params);
   };
 
+  const deleteFolderMutation = useMutation({
+    mutationFn: (targetFolderId: string) => deleteFolder(kbId, targetFolderId),
+    onMutate: () => {
+      setFolderDeleteError(null);
+    },
+    onSuccess: async (_data, deletedId) => {
+      const name = deleteFolderTarget?.name ?? "Folder";
+      const treeFolders = treeQuery.data?.folders ?? [];
+      setDeleteFolderTarget(null);
+      if (isFolderInDeletedSubtree(treeFolders, deletedId, folderId)) {
+        setSelection({ folderId: null });
+      }
+      setFolderSuccessToast(`Deleted “${name}”`);
+      await Promise.all([
+        queryClient.invalidateQueries({
+          predicate: (query) =>
+            Array.isArray(query.queryKey) &&
+            query.queryKey[0] === "knowledge" &&
+            query.queryKey[1] === "contents" &&
+            query.queryKey[2] === kbId,
+        }),
+        queryClient.invalidateQueries({ queryKey: knowledgeKeys.tree(kbId) }),
+        queryClient.invalidateQueries({ queryKey: knowledgeKeys.baseDetail(kbId) }),
+      ]);
+      window.setTimeout(() => setFolderSuccessToast(null), 4000);
+    },
+    onError: (error) => {
+      setFolderDeleteError(isApiError(error) ? error.message : "Delete failed");
+    },
+  });
+
   if (!kbId) {
     return <EmptyState title="Missing knowledge base" />;
   }
@@ -100,6 +173,10 @@ export function KnowledgeBrowser(): React.JSX.Element {
   }
 
   const folderLabel = findFolderPath(treeQuery.data?.folders ?? [], folderId);
+  const requestDeleteFolder = (id: string, name: string): void => {
+    setFolderDeleteError(null);
+    setDeleteFolderTarget({ id, name });
+  };
 
   return (
     <section className="flex h-full min-h-0 flex-col gap-4">
@@ -120,6 +197,17 @@ export function KnowledgeBrowser(): React.JSX.Element {
           </div>
         }
       />
+
+      {folderDeleteError ? (
+        <p className="text-sm text-destructive" role="alert">
+          {folderDeleteError}
+        </p>
+      ) : null}
+      {folderSuccessToast ? (
+        <p className="text-sm text-foreground" role="status">
+          {folderSuccessToast}
+        </p>
+      ) : null}
 
       <div className="flex gap-2 lg:hidden">
         {(
@@ -161,6 +249,9 @@ export function KnowledgeBrowser(): React.JSX.Element {
                 setSelection({ folderId: id });
                 setMobilePane("list");
               }}
+              onRequestDeleteFolder={requestDeleteFolder}
+              deletingFolderId={deleteFolderTarget?.id ?? null}
+              deletePending={deleteFolderMutation.isPending}
             />
           ) : null}
         </aside>
@@ -206,6 +297,9 @@ export function KnowledgeBrowser(): React.JSX.Element {
               onClearDocumentSelection={() => {
                 setSelection({ documentId: null });
               }}
+              onRequestDeleteFolder={requestDeleteFolder}
+              deletingFolderId={deleteFolderTarget?.id ?? null}
+              folderDeletePending={deleteFolderMutation.isPending}
             />
           ) : null}
         </div>
@@ -233,6 +327,21 @@ export function KnowledgeBrowser(): React.JSX.Element {
         onOpenChange={setFolderOpen}
         knowledgeBaseId={kbId}
         parentFolderId={folderId}
+      />
+      <DeleteFolderDialog
+        open={deleteFolderTarget !== null}
+        folderName={deleteFolderTarget?.name ?? ""}
+        pending={deleteFolderMutation.isPending}
+        onOpenChange={(open) => {
+          if (!open && !deleteFolderMutation.isPending) {
+            setDeleteFolderTarget(null);
+          }
+        }}
+        onConfirm={() => {
+          if (deleteFolderTarget) {
+            deleteFolderMutation.mutate(deleteFolderTarget.id);
+          }
+        }}
       />
     </section>
   );

@@ -106,6 +106,13 @@ export function createFolder(
   });
 }
 
+export function deleteFolder(knowledgeBaseId: string, folderId: string): Promise<void> {
+  return apiRequest(
+    workspacePath(`/knowledge-bases/${knowledgeBaseId}/folders/${folderId}`),
+    { method: "DELETE" },
+  );
+}
+
 export function createDocument(
   knowledgeBaseId: string,
   input: CreateDocumentInput,

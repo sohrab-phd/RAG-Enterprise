@@ -266,6 +266,30 @@ async def move_folder(
     return success_response(to_folder_summary(raise_for_result(result)))
 
 
+@router.delete(
+    "/knowledge-bases/{knowledge_base_id}/folders/{folder_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["folders"],
+)
+async def delete_folder(
+    workspace_id: uuid.UUID,
+    knowledge_base_id: uuid.UUID,
+    folder_id: uuid.UUID,
+    actor: ActorDep,
+    dispatcher: CommandDispatcherDep,
+) -> Response:
+    result = await dispatcher.dispatch(
+        cmd.DeleteFolderCommand(
+            actor=actor,
+            workspace_id=workspace_id,
+            knowledge_base_id=knowledge_base_id,
+            folder_id=folder_id,
+        )
+    )
+    raise_for_result(result)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @router.get(
     "/knowledge-bases/{knowledge_base_id}/tree",
     response_model=SuccessEnvelope[TreeViewDTO],

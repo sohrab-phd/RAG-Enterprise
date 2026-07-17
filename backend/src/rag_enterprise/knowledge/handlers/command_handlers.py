@@ -218,9 +218,7 @@ class DeleteKnowledgeBaseHandler:
             if kb is None:
                 return Result.fail(not_found("Knowledge base").error)  # type: ignore[arg-type]
             if await uow.documents.has_legal_hold_in_kb(kb.id):
-                return Result.fail(
-                    conflict("Knowledge base has documents under legal hold").error
-                )  # type: ignore[arg-type]
+                return Result.fail(conflict("Knowledge base has documents under legal hold").error)  # type: ignore[arg-type]
 
             storage_keys.extend(await uow.document_versions.list_storage_keys_for_kb(kb.id))
             storage_keys.extend(await uow.upload_sessions.list_staging_keys_for_kb(kb.id))
@@ -364,6 +362,71 @@ class MoveFolderHandler:
                 child.row_version += 1
             await uow.commit()
             return Result.ok(folder)
+
+
+class DeleteFolderHandler:
+    def __init__(
+        self,
+        session_factory: async_sessionmaker[AsyncSession],
+        file_storage: FileStorage,
+    ) -> None:
+        self._session_factory = session_factory
+        self._file_storage = file_storage
+
+    async def handle(self, command: cmd.DeleteFolderCommand) -> Result[None]:
+        auth = require_permission(command.actor, "folder:manage")
+        if auth.is_failure:
+            return Result.fail(auth.error)  # type: ignore[arg-type]
+        scope = _scope(command)
+        storage_keys: list[str] = []
+        async with KnowledgeUnitOfWork(self._session_factory) as uow:
+            folder = await uow.folders.get_scoped(
+                scope, command.knowledge_base_id, command.folder_id
+            )
+            if folder is None:
+                return Result.fail(not_found("Folder").error)  # type: ignore[arg-type]
+
+            folder_ids = await uow.folders.list_subtree_ids(command.knowledge_base_id, folder.id)
+            if await uow.documents.has_legal_hold_in_folders(folder_ids):
+                return Result.fail(conflict("Folder has documents under legal hold").error)  # type: ignore[arg-type]
+
+            document_ids = await uow.documents.list_ids_in_folders(folder_ids)
+            if document_ids:
+                storage_keys.extend(
+                    await uow.document_versions.list_storage_keys_for_documents(document_ids)
+                )
+                storage_keys.extend(
+                    await uow.upload_sessions.list_staging_keys_for_documents(document_ids)
+                )
+
+                embeddings = EmbeddingRepository(uow.session)
+                chunks = ChunkRepository(uow.session)
+                await embeddings.delete_all_for_documents(document_ids)
+                await chunks.delete_all_for_documents(document_ids)
+                await uow.document_versions.delete_all_for_documents(document_ids)
+                await uow.upload_sessions.delete_all_for_documents(document_ids)
+                await uow.documents.hard_delete_in_folders(folder_ids)
+
+                kb = await uow.knowledge_bases.get_scoped(scope, command.knowledge_base_id)
+                if kb is not None and kb.document_count > 0:
+                    kb.document_count = max(0, kb.document_count - len(document_ids))
+
+            await uow.folders.hard_delete_subtree(folder_ids)
+            await uow.commit()
+
+        await self._best_effort_delete_files(storage_keys)
+        return Result.ok(None)
+
+    async def _best_effort_delete_files(self, keys: list[str]) -> None:
+        seen: set[str] = set()
+        for key in keys:
+            if not key or key in seen:
+                continue
+            seen.add(key)
+            try:
+                await self._file_storage.delete(key=key)
+            except Exception:  # noqa: BLE001 — missing/corrupt files must not fail deletion
+                continue
 
 
 class CreateDocumentHandler:

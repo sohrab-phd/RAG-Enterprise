@@ -91,6 +91,11 @@ class MoveFolderCommand(_ScopedCommand):
     expected_version: int | None = None
 
 
+class DeleteFolderCommand(_ScopedCommand):
+    knowledge_base_id: uuid.UUID
+    folder_id: uuid.UUID
+
+
 class CreateDocumentCommand(_ScopedCommand):
     knowledge_base_id: uuid.UUID
     title: str

@@ -25,6 +25,9 @@ type DocumentListProps = {
   readonly onUpload: () => void;
   readonly search: string;
   readonly onSearchChange: (value: string) => void;
+  readonly onRequestDeleteFolder?: (folderId: string, folderName: string) => void;
+  readonly deletingFolderId?: string | null;
+  readonly folderDeletePending?: boolean;
 };
 
 export function DocumentList({
@@ -38,6 +41,9 @@ export function DocumentList({
   onUpload,
   search,
   onSearchChange,
+  onRequestDeleteFolder,
+  deletingFolderId,
+  folderDeletePending,
 }: DocumentListProps): React.JSX.Element {
   const queryClient = useQueryClient();
   const [deleteTarget, setDeleteTarget] = React.useState<{
@@ -136,20 +142,45 @@ export function DocumentList({
               </tr>
             </thead>
             <tbody>
-              {filteredFolders.map((folder) => (
-                <tr
-                  key={`folder-${folder.id}`}
-                  className="cursor-pointer border-b border-border hover:bg-muted/40"
-                  onClick={() => onSelectFolder(folder.id)}
-                >
-                  <td className="px-3 py-2 font-medium" colSpan={5}>
-                    <span className="inline-flex items-center gap-2">
-                      <Folder className="size-4 text-muted-foreground" aria-hidden />
-                      {folder.name}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {filteredFolders.map((folder) => {
+                const folderDeleting =
+                  Boolean(folderDeletePending) && deletingFolderId === folder.id;
+                return (
+                  <tr
+                    key={`folder-${folder.id}`}
+                    className="cursor-pointer border-b border-border hover:bg-muted/40"
+                    onClick={() => onSelectFolder(folder.id)}
+                  >
+                    <td className="px-3 py-2 font-medium" colSpan={4}>
+                      <span className="inline-flex items-center gap-2">
+                        <Folder className="size-4 text-muted-foreground" aria-hidden />
+                        {folder.name}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2">
+                      {onRequestDeleteFolder ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Delete folder ${folder.name}`}
+                          disabled={folderDeletePending}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onRequestDeleteFolder(folder.id, folder.name);
+                          }}
+                        >
+                          {folderDeleting ? (
+                            <Loader2 className="size-4 animate-spin" aria-hidden />
+                          ) : (
+                            <Trash2 className="size-4" aria-hidden />
+                          )}
+                        </Button>
+                      ) : null}
+                    </td>
+                  </tr>
+                );
+              })}
               {filteredDocuments.map((doc) => {
                 const selected = selectedDocumentId === doc.id;
                 return (
