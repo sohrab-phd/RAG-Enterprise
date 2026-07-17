@@ -358,3 +358,171 @@ async def test_explicit_history_used(
         )
     )
     assert result.status == GenerationStatus.COMPLETED
+
+
+@dataclass
+class ScriptedLLM:
+    """Deterministic LLM stub that returns a fixed completion string."""
+
+    content: str
+    model_key: str = "scripted"
+
+    @property
+    def provider_name(self) -> str:
+        return "scripted"
+
+    async def complete(self, request: object) -> object:
+        from rag_enterprise.generation.providers.types import CompletionResult
+
+        return CompletionResult(content=self.content, model_key=self.model_key)
+
+
+@pytest.mark.asyncio
+async def test_malformed_abstain_never_leaks_to_user(
+    gen_session_factory: async_sessionmaker[AsyncSession],
+    seeded_kb: tuple[uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUID],
+) -> None:
+    org_id, workspace_id, user_id, kb_id = seeded_kb
+    chunk = _chunk(0.7)
+    retrieval = FakeRetrieval(
+        SearchResponse(
+            query_text="q",
+            knowledge_base_id=kb_id,
+            embedding_model_id=uuid.uuid4(),
+            top_k=5,
+            results=[chunk],
+            result_count=1,
+        )
+    )
+    service = GenerationService(
+        session_factory=gen_session_factory,
+        retrieval_service=retrieval,  # type: ignore[arg-type]
+        llm_provider=ScriptedLLM("ABSTAIN: insufficient_evidence[n]\n[n] chunk_id=abc text: junk"),
+        retry_delays_seconds=(0.0,),
+    )
+    result = await service.generate(
+        GenerationRequest(
+            question="نام کاربری گلستان چیست؟",
+            organization_id=org_id,
+            workspace_id=workspace_id,
+            knowledge_base_id=kb_id,
+            user_id=user_id,
+            permissions=_permissions(),
+            language_hint="fa",
+        )
+    )
+    assert result.status == GenerationStatus.ABSTAINED
+    assert result.answer is not None
+    assert "ABSTAIN" not in result.answer
+    assert "chunk_id" not in result.answer
+    assert "شواهد کافی" in result.answer
+
+
+@pytest.mark.asyncio
+async def test_citation_salvage_avoids_false_abstain(
+    gen_session_factory: async_sessionmaker[AsyncSession],
+    seeded_kb: tuple[uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUID],
+) -> None:
+    org_id, workspace_id, user_id, kb_id = seeded_kb
+    chunk = _chunk(0.85)
+    retrieval = FakeRetrieval(
+        SearchResponse(
+            query_text="leave",
+            knowledge_base_id=kb_id,
+            embedding_model_id=uuid.uuid4(),
+            top_k=5,
+            results=[chunk],
+            result_count=1,
+        )
+    )
+    service = GenerationService(
+        session_factory=gen_session_factory,
+        retrieval_service=retrieval,  # type: ignore[arg-type]
+        llm_provider=ScriptedLLM("مرخصی سالانه ۲۰ روز کاری است."),
+        retry_delays_seconds=(0.0,),
+    )
+    result = await service.generate(
+        GenerationRequest(
+            question="مرخصی سالانه چند روز است؟",
+            organization_id=org_id,
+            workspace_id=workspace_id,
+            knowledge_base_id=kb_id,
+            user_id=user_id,
+            permissions=_permissions(),
+            language_hint="fa",
+        )
+    )
+    assert result.status == GenerationStatus.COMPLETED
+    assert result.citations
+    assert result.citations[0].chunk_id == chunk.chunk_id
+    assert "۲۰" in (result.answer or "")
+    assert "[1]" in (result.answer or "")
+
+
+@pytest.mark.asyncio
+async def test_question_echo_stripped_when_answer_follows(
+    gen_session_factory: async_sessionmaker[AsyncSession],
+    seeded_kb: tuple[uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUID],
+) -> None:
+    org_id, workspace_id, user_id, kb_id = seeded_kb
+    chunk = _chunk(0.8)
+    question = "درخواست انتقالی چگونه ثبت می‌شود؟"
+    retrieval = FakeRetrieval(
+        SearchResponse(
+            query_text=question,
+            knowledge_base_id=kb_id,
+            embedding_model_id=uuid.uuid4(),
+            top_k=5,
+            results=[chunk],
+            result_count=1,
+        )
+    )
+    service = GenerationService(
+        session_factory=gen_session_factory,
+        retrieval_service=retrieval,  # type: ignore[arg-type]
+        llm_provider=ScriptedLLM(f"{question} فقط از طریق سامانه سجاد. [1]"),
+        retry_delays_seconds=(0.0,),
+    )
+    result = await service.generate(
+        GenerationRequest(
+            question=question,
+            organization_id=org_id,
+            workspace_id=workspace_id,
+            knowledge_base_id=kb_id,
+            user_id=user_id,
+            permissions=_permissions(),
+            language_hint="fa",
+        )
+    )
+    assert result.status == GenerationStatus.COMPLETED
+    assert result.answer is not None
+    assert not result.answer.startswith(question)
+    assert "سجاد" in result.answer
+
+
+def test_prompt_forbids_false_abstain_when_evidence_answers() -> None:
+    """Regression: system prompt must instruct answering when evidence suffices."""
+    from rag_enterprise.generation.prompt_builder import PromptBuilder
+
+    builder = PromptBuilder()
+    built = builder.build(
+        question="رمز عبور اولیه گلستان چیست؟",
+        chunks=[
+            RetrievedChunk(
+                chunk_id=uuid.uuid4(),
+                document_id=uuid.uuid4(),
+                document_version_id=uuid.uuid4(),
+                knowledge_base_id=uuid.uuid4(),
+                score=0.66,
+                text="رمز عبور اولیه بهصورت پیشفرض کد ملی دانشجو است.",
+                chunk_index=0,
+                start_char=0,
+                end_char=40,
+            )
+        ],
+        history=[],
+        language_hint="fa",
+    )
+    assert "Do NOT abstain when the answer is present" in built.system_prompt
+    assert "Never repeat or restate the QUESTION" in built.system_prompt
+    assert "Persian" in built.system_prompt

@@ -100,6 +100,19 @@ Legacy: `echo`→`mock`, `http`→`api`; `LLM_BASE_URL` / `LLM_API_KEY` fill `OP
 
 Startup validation rules: [CONFIGURATION.md](CONFIGURATION.md).
 
+## Abstention policy (RC3.1)
+
+Abstain paths (user always sees a clean localized message, never raw `ABSTAIN…`):
+
+1. No retrieved chunks, or top score `< GENERATION_MIN_EVIDENCE_SCORE` (default **0.25** for real embeddings).
+2. Model returns an abstain directive (robust parser; trailing junk/citations allowed).
+3. Model returns echo-only / empty prose after sanitization.
+4. Citation salvage fails (no chunks available after a substantive answer — rare).
+
+When evidence already passed the score gate and the model answered without markers,
+generation **salvages** a top-chunk citation instead of a false `citation_validation_failed`
+abstain. See [RC3.1_FALSE_ABSTAIN_REPORT.md](../../RC3.1_FALSE_ABSTAIN_REPORT.md).
+
 ## Auth headers
 
 Same as knowledge/retrieval: `X-User-Id`, `X-Organization-Id`.

@@ -11,7 +11,14 @@ from dataclasses import dataclass
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from rag_enterprise.application.interfaces.llm import LLMProvider
-from rag_enterprise.generation.citations import is_model_abstention, validate_citations
+from rag_enterprise.generation.citations import (
+    extract_markers,
+    is_model_abstention,
+    is_substantive_answer,
+    salvage_top_chunk_citation,
+    strip_question_echo,
+    validate_citations,
+)
 from rag_enterprise.generation.exceptions import (
     GenerationError,
     GenerationTimeoutError,
@@ -119,10 +126,11 @@ class GenerationService:
 
         chunk_ids = [chunk.chunk_id for chunk in search.results]
         max_score = max((chunk.score for chunk in search.results), default=0.0)
+        response_language = self._prompt_builder.detect_language(question, request.language_hint)
         if search.result_count == 0 or max_score < self._min_evidence_score:
             result = GenerationResult(
                 status=GenerationStatus.ABSTAINED,
-                answer=v1.ABSTAIN_MESSAGE,
+                answer=v1.abstain_user_message(response_language),
                 abstention_reason="insufficient_evidence",
                 retrieved_chunks=list(search.results),
                 retrieved_chunk_ids=chunk_ids,
@@ -189,7 +197,7 @@ class GenerationService:
         if abstain is not None:
             result = GenerationResult(
                 status=GenerationStatus.ABSTAINED,
-                answer=v1.ABSTAIN_MESSAGE,
+                answer=v1.abstain_user_message(response_language),
                 abstention_reason=abstain,
                 retrieved_chunks=built.chunks_used,
                 retrieved_chunk_ids=[c.chunk_id for c in built.chunks_used],
@@ -200,15 +208,38 @@ class GenerationService:
             conversation_id = await self._persist_turn(request, conversation_id, question, result)
             return result.model_copy(update={"conversation_id": conversation_id})
 
+        cleaned = strip_question_echo(question, content)
+        if not is_substantive_answer(cleaned):
+            # Echo-only / empty after sanitization — never return the question as an answer.
+            result = GenerationResult(
+                status=GenerationStatus.ABSTAINED,
+                answer=v1.abstain_user_message(response_language),
+                abstention_reason="empty_or_echo_answer",
+                retrieved_chunks=built.chunks_used,
+                retrieved_chunk_ids=[c.chunk_id for c in built.chunks_used],
+                model_key=self._llm.model_key,
+                prompt_template_version=built.template_version,
+                conversation_id=conversation_id,
+            )
+            conversation_id = await self._persist_turn(request, conversation_id, question, result)
+            return result.model_copy(update={"conversation_id": conversation_id})
+
         citations = validate_citations(
-            answer=content,
+            answer=cleaned,
             markers=built.markers,
             chunks=built.chunks_used,
         )
         if citations is None:
+            # Evidence already passed the sufficiency gate and the model answered.
+            # Salvage a top-chunk citation instead of a false abstain.
+            citations = salvage_top_chunk_citation(
+                chunks=built.chunks_used,
+                markers=built.markers,
+            )
+        if citations is None:
             result = GenerationResult(
                 status=GenerationStatus.ABSTAINED,
-                answer=v1.ABSTAIN_MESSAGE,
+                answer=v1.abstain_user_message(response_language),
                 abstention_reason="citation_validation_failed",
                 retrieved_chunks=built.chunks_used,
                 retrieved_chunk_ids=[c.chunk_id for c in built.chunks_used],
@@ -219,9 +250,14 @@ class GenerationService:
             conversation_id = await self._persist_turn(request, conversation_id, question, result)
             return result.model_copy(update={"conversation_id": conversation_id})
 
+        # Ensure the user-facing answer still carries a citation marker when salvaged.
+        final_answer = cleaned.strip()
+        if not extract_markers(final_answer):
+            final_answer = f"{final_answer} {citations[0].marker}".strip()
+
         result = GenerationResult(
             status=GenerationStatus.COMPLETED,
-            answer=content.strip(),
+            answer=final_answer,
             citations=citations,
             retrieved_chunks=built.chunks_used,
             retrieved_chunk_ids=[c.chunk_id for c in built.chunks_used],

@@ -43,6 +43,7 @@ def test_builds_versioned_prompt_with_history_and_markers() -> None:
 
     assert built.template_version == "v1"
     assert "Persian" in built.system_prompt
+    assert "Do NOT abstain when the answer is present" in built.system_prompt
     assert "HISTORY" in built.user_prompt
     assert "EVIDENCE" in built.user_prompt
     assert "[1]" in built.user_prompt
