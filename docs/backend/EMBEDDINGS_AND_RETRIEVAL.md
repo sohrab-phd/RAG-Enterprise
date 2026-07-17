@@ -79,12 +79,15 @@ startup. See [CONFIGURATION.md](CONFIGURATION.md).
 }
 ```
 
-Response uses `SuccessEnvelope` with ranked `RetrievedChunk` objects (`score` =
-cosine similarity in `[0, 1]`).
+Response uses `SuccessEnvelope` with ranked `RetrievedChunk` objects (`score` in
+`[0, 1]` — dense cosine after deterministic Persian FAQ lexical calibration; see
+[RC3.2](../../RC3.2_RETRIEVAL_RANKING_REPORT.md)).
 
-Pipeline: authorize → embed query → metadata filters → cosine top-K → return chunks.
+Pipeline: authorize → embed query → metadata filters → cosine candidate pool →
+FAQ ranking calibration → return top-K chunks.
 
-v1 supports **dense vector search only** (no BM25, hybrid, or reranking).
+v1 supports **dense vector search only** (no BM25, hybrid, or neural rerankers).
+RC3.2 adds lightweight deterministic score calibration for Persian FAQ neighbors.
 
 ## Persistence
 

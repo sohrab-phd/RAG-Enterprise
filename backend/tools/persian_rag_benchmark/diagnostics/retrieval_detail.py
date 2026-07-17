@@ -302,6 +302,7 @@ def _question_row(item: QuestionRunResult) -> dict[str, Any]:
     gold = _gold_hit(item)
     top1 = item.retrieved[0] if item.retrieved else None
     max_score = max((hit.score for hit in item.retrieved), default=None)
+    ranking = _ranking_explain(item)
     return {
         "question_id": item.question_id,
         "cohort": item.cohort.value if hasattr(item.cohort, "value") else str(item.cohort),
@@ -320,7 +321,59 @@ def _question_row(item: QuestionRunResult) -> dict[str, Any]:
         "rank_distance_to_correct": ((int(gold.rank) - 1) if gold is not None else None),
         "abstained": item.abstained,
         "hallucination_risk_estimate": item.hallucination_risk_estimate,
+        "ranking_explainability": ranking,
     }
+
+
+def _ranking_explain(item: QuestionRunResult) -> dict[str, Any] | None:
+    """Attach RC3.2 ranking bonuses/penalties for the retrieved candidate list."""
+    if not item.retrieved:
+        return None
+    try:
+        import uuid
+
+        from rag_enterprise.retrieval.models import RetrievedChunk
+        from rag_enterprise.retrieval.ranking import rank_dense_hits
+    except ImportError:
+        return None
+
+    chunks: list[RetrievedChunk] = []
+    for hit in item.retrieved[:10]:
+        try:
+            chunk_id = uuid.UUID(hit.chunk_id)
+            document_id = uuid.UUID(hit.document_id)
+            version_id = uuid.UUID(hit.document_version_id)
+        except ValueError:
+            continue
+        chunks.append(
+            RetrievedChunk(
+                chunk_id=chunk_id,
+                document_id=document_id,
+                document_version_id=version_id,
+                knowledge_base_id=uuid.UUID(int=0),
+                score=float(hit.score),
+                text=hit.text,
+                chunk_index=max(0, int(hit.rank) - 1),
+                start_char=0,
+                end_char=len(hit.text or ""),
+                language=hit.language,
+            )
+        )
+    if not chunks:
+        return None
+    _ranked, diagnostics = rank_dense_hits(
+        query=item.question,
+        chunks=chunks,
+        top_k=len(chunks),
+    )
+    payload = diagnostics.to_dict()
+    rankings = payload.get("rankings")
+    if isinstance(rankings, list) and rankings:
+        top = rankings[0] if isinstance(rankings[0], dict) else {}
+        second = rankings[1] if len(rankings) > 1 and isinstance(rankings[1], dict) else {}
+        payload["why_rank1_won"] = top.get("reasons_won")
+        payload["why_rank2_lost"] = second.get("reasons_lost")
+    return payload
 
 
 def _score_stats(values: list[float]) -> dict[str, float | None]:

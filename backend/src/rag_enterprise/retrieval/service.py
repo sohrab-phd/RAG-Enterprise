@@ -26,6 +26,7 @@ from rag_enterprise.retrieval.exceptions import (
 )
 from rag_enterprise.retrieval.filters import build_filters
 from rag_enterprise.retrieval.models import RetrievedChunk, SearchRequest, SearchResponse
+from rag_enterprise.retrieval.ranking import candidate_pool_size, rank_dense_hits
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +52,7 @@ class RetrievalService:
         self._search_timeout_seconds = search_timeout_seconds
 
     async def retrieve(self, request: SearchRequest) -> SearchResponse:
-        """Run authorization → normalize → embed query → filter → cosine top-K."""
+        """Run authorization → normalize → embed → cosine pool → FAQ ranking → top-K."""
         started = time.perf_counter()
         # Same canonical pipeline as document processing (Feature 002 / RC2.1).
         query_text = normalize_persian_text(request.query_text).strip()
@@ -59,6 +60,7 @@ class RetrievalService:
             raise InvalidQueryError()
 
         top_k = max(1, min(request.top_k, MAX_TOP_K))
+        pool_k = candidate_pool_size(top_k, max_top_k=MAX_TOP_K)
         embedding_model_id = request.embedding_model_id or self._default_embedding_model_id
 
         if embedding_model_id != self._default_embedding_model_id:
@@ -85,6 +87,7 @@ class RetrievalService:
                     "organization_id": str(request.organization_id),
                     "knowledge_base_id": str(request.knowledge_base_id),
                     "top_k": top_k,
+                    "candidate_pool": pool_k,
                     "embedding_model_id": str(embedding_model_id),
                 },
             )
@@ -135,7 +138,7 @@ class RetrievalService:
                         knowledge_base_id=filters.knowledge_base_id,
                         embedding_model_id=filters.embedding_model_id,
                         query_vector=query_vector,
-                        top_k=top_k,
+                        top_k=pool_k,
                         document_ids=(list(filters.document_ids) if filters.document_ids else None),
                         language=filters.language,
                     ),
@@ -147,7 +150,7 @@ class RetrievalService:
             if "document:read" not in request.permissions:
                 hits = []
 
-            results = [
+            cosine_results = [
                 RetrievedChunk(
                     chunk_id=hit.chunk_id,
                     document_id=hit.document_id,
@@ -163,6 +166,11 @@ class RetrievalService:
                 )
                 for hit in hits
             ]
+            results, ranking_diagnostics = rank_dense_hits(
+                query=query_text,
+                chunks=cosine_results,
+                top_k=top_k,
+            )
             if not results and "no_indexed_content" not in warnings:
                 warnings.append("no_results")
 
@@ -175,17 +183,34 @@ class RetrievalService:
                 result_count=len(results),
                 warnings=warnings,
             )
-            self._log_completed(started, response.result_count, warnings)
+            self._log_completed(
+                started,
+                response.result_count,
+                warnings,
+                ranking_diagnostics=ranking_diagnostics.to_dict(),
+            )
             return response
 
     @staticmethod
-    def _log_completed(started: float, result_count: int, warnings: list[str]) -> None:
+    def _log_completed(
+        started: float,
+        result_count: int,
+        warnings: list[str],
+        *,
+        ranking_diagnostics: dict[str, object] | None = None,
+    ) -> None:
         latency_ms = int((time.perf_counter() - started) * 1000)
-        logger.info(
-            "retrieval_completed",
-            extra={
-                "result_count": result_count,
-                "latency_ms": latency_ms,
-                "warnings": warnings,
-            },
-        )
+        extra: dict[str, object] = {
+            "result_count": result_count,
+            "latency_ms": latency_ms,
+            "warnings": warnings,
+        }
+        if ranking_diagnostics is not None:
+            rankings = ranking_diagnostics.get("rankings")
+            if isinstance(rankings, list) and rankings:
+                top = rankings[0]
+                if isinstance(top, dict):
+                    extra["rank1_cosine"] = top.get("cosine_score")
+                    extra["rank1_adjusted"] = top.get("adjusted_score")
+                    extra["rank1_reasons"] = top.get("reasons_won")
+        logger.info("retrieval_completed", extra=extra)
