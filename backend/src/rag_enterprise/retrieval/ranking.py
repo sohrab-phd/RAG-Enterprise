@@ -1,8 +1,8 @@
 """Deterministic dense-retrieval ranking calibration for Persian FAQ chunks.
 
 Applies small lexical / FAQ-structure bonuses on top of cosine similarity so that
-near-tied dense neighbors order correctly (Hit@1 / MRR) without hybrid search,
-BM25, or neural rerankers.
+near-tied hybrid neighbors order correctly (Hit@1 / MRR). Hybrid retrieval
+(dense + BM25 + RRF) feeds this module; RC3.2 remains the final ranking stage.
 
 The adjusted score is written back to ``RetrievedChunk.score`` so downstream
 context assembly (which sorts by score) preserves ranking order.

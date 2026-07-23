@@ -35,6 +35,22 @@ class VectorHit:
     language: str | None
 
 
+@dataclass(frozen=True)
+class LexicalCorpusRow:
+    """Indexed chunk text used to build BM25 without schema changes."""
+
+    chunk_id: uuid.UUID
+    document_id: uuid.UUID
+    document_version_id: uuid.UUID
+    knowledge_base_id: uuid.UUID
+    text: str
+    chunk_index: int
+    start_char: int
+    end_char: int
+    heading: str | None
+    language: str | None
+
+
 class EmbeddingRepository(SQLAlchemyRepository[Embedding]):
     """Persistence and dense vector search for embeddings."""
 
@@ -125,6 +141,69 @@ class EmbeddingRepository(SQLAlchemyRepository[Embedding]):
         )
         result = await self._session.scalar(statement)
         return int(result or 0)
+
+    async def list_indexed_corpus(
+        self,
+        *,
+        organization_id: uuid.UUID,
+        knowledge_base_id: uuid.UUID,
+        embedding_model_id: uuid.UUID,
+        document_ids: Sequence[uuid.UUID] | None = None,
+        language: str | None = None,
+    ) -> list[LexicalCorpusRow]:
+        """Return indexed chunk texts for BM25 (same ACL filters as vector search)."""
+        statement = self._filtered_join(
+            organization_id=organization_id,
+            knowledge_base_id=knowledge_base_id,
+            embedding_model_id=embedding_model_id,
+            document_ids=document_ids,
+            language=language,
+        ).order_by(Document.id.asc(), Chunk.sequence_number.asc(), Chunk.id.asc())
+        rows = (await self._session.execute(statement)).all()
+        corpus: list[LexicalCorpusRow] = []
+        for _embedding, chunk, document in rows:
+            corpus.append(
+                LexicalCorpusRow(
+                    chunk_id=chunk.id,
+                    document_id=document.id,
+                    document_version_id=chunk.document_version_id,
+                    knowledge_base_id=chunk.knowledge_base_id,
+                    text=chunk.text,
+                    chunk_index=chunk.sequence_number,
+                    start_char=chunk.start_offset,
+                    end_char=chunk.end_offset,
+                    heading=chunk.heading,
+                    language=chunk.language,
+                )
+            )
+        return corpus
+
+    async def cosine_for_chunk_ids(
+        self,
+        *,
+        organization_id: uuid.UUID,
+        knowledge_base_id: uuid.UUID,
+        embedding_model_id: uuid.UUID,
+        query_vector: list[float],
+        chunk_ids: Sequence[uuid.UUID],
+    ) -> dict[uuid.UUID, float]:
+        """Compute cosine similarity for specific indexed chunk ids."""
+        if not chunk_ids:
+            return {}
+        statement = (
+            select(Embedding, Chunk)
+            .join(Chunk, Chunk.id == Embedding.chunk_id)
+            .where(Embedding.organization_id == organization_id)
+            .where(Embedding.knowledge_base_id == knowledge_base_id)
+            .where(Embedding.embedding_model_id == embedding_model_id)
+            .where(Embedding.index_status == IndexStatus.INDEXED)
+            .where(Embedding.chunk_id.in_(list(chunk_ids)))
+        )
+        rows = (await self._session.execute(statement)).all()
+        scores: dict[uuid.UUID, float] = {}
+        for embedding, chunk in rows:
+            scores[chunk.id] = _cosine_similarity(query_vector, list(embedding.vector))
+        return scores
 
     async def search_cosine(
         self,

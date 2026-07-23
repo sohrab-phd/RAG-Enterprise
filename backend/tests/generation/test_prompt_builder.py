@@ -69,3 +69,59 @@ def test_detects_persian_language() -> None:
     builder = PromptBuilder()
     assert builder.detect_language("این یک سوال فارسی است") == "fa"
     assert builder.detect_language("What is the leave policy?") == "en"
+
+
+def test_prompt_requires_complete_multi_chunk_synthesis_and_local_citations() -> None:
+    builder = PromptBuilder()
+    chunks = [
+        _chunk("مرخصی استحقاقی کارکنان رسمی ۲۰ روز کاری در سال است.", 0.91),
+        _chunk("حداکثر پنج روز مرخصی استفاده‌نشده به سال بعد منتقل می‌شود.", 0.88),
+        _chunk("انتقال مرخصی نیازمند تأیید منابع انسانی است.", 0.86),
+    ]
+
+    built = builder.build(
+        question="میزان مرخصی و شرایط انتقال آن چیست؟",
+        chunks=chunks,
+        history=[],
+        language_hint="fa",
+    )
+
+    prompt = f"{built.system_prompt}\n{built.user_prompt}"
+    assert "Inspect ALL EVIDENCE blocks" in prompt
+    assert "Combine complementary facts from multiple blocks" in prompt
+    assert "Cite every factual sentence" in prompt
+    assert "If a sentence uses two blocks, cite both" in prompt
+    assert "Never use one final" in prompt
+    assert "[1]" in built.user_prompt
+    assert "[2]" in built.user_prompt
+    assert "[3]" in built.user_prompt
+
+
+def test_prompt_specifies_conflicts_lists_tables_and_natural_persian() -> None:
+    builder = PromptBuilder()
+    built = builder.build(
+        question="مراحل ثبت درخواست چیست؟",
+        chunks=[_chunk("مرحله اول ثبت فرم و مرحله دوم تأیید مدیر است.")],
+        history=[],
+        language_hint="fa",
+    )
+
+    prompt = f"{built.system_prompt}\n{built.user_prompt}"
+    assert "documents contain conflicting information" in prompt
+    assert "Persian-numbered steps" in prompt
+    assert "do not dump raw table rows" in prompt
+    assert "پرسش شما" in prompt
+    assert "براساس اطلاعات موجود" in prompt
+    assert "Output only the final answer" in prompt
+
+
+def test_prompt_preserves_exact_rc31_abstention_contract() -> None:
+    built = PromptBuilder().build(
+        question="پاسخ چیست؟",
+        chunks=[_chunk("شواهد نامرتبط")],
+        history=[],
+        language_hint="fa",
+    )
+
+    assert "ABSTAIN: insufficient_evidence" in built.system_prompt
+    assert "Do NOT abstain when the answer is present" in built.system_prompt

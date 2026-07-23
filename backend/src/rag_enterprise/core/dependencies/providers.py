@@ -102,6 +102,7 @@ class AppContainer:
             self.retrieval_service = RetrievalService(
                 session_factory=self.session_factory,
                 embedding_provider=self.embedding_provider,
+                file_storage_root=self.settings.file_storage_root,
             )
             self.generation_service = GenerationService(
                 session_factory=self.session_factory,

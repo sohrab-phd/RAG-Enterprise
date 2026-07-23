@@ -247,6 +247,11 @@ class IndexingService:
             version.failure_reason = None
             await session.commit()
 
+            await self._persist_lexical_index(
+                organization_id=version.organization_id,
+                knowledge_base_id=version.knowledge_base_id,
+            )
+
             logger.info(
                 "indexing_completed",
                 extra={
@@ -262,6 +267,34 @@ class IndexingService:
                 embeddings_skipped=skipped,
                 embeddings_failed=0,
                 warnings=warnings,
+            )
+
+    async def _persist_lexical_index(
+        self,
+        *,
+        organization_id: uuid.UUID,
+        knowledge_base_id: uuid.UUID,
+    ) -> None:
+        """Best-effort BM25 token side-file; never fails dense indexing."""
+        try:
+            from rag_enterprise.core.config.settings import get_settings
+            from rag_enterprise.retrieval.lexical_index import persist_kb_lexical_index
+
+            settings = get_settings()
+            await persist_kb_lexical_index(
+                self._session_factory,
+                organization_id=organization_id,
+                knowledge_base_id=knowledge_base_id,
+                embedding_model_id=self._embedding_model_id,
+                file_storage_root=settings.file_storage_root,
+            )
+        except Exception as exc:  # noqa: BLE001 — lexical index is non-critical
+            logger.warning(
+                "lexical_index_persist_failed",
+                extra={
+                    "knowledge_base_id": str(knowledge_base_id),
+                    "error": str(exc),
+                },
             )
 
     async def _embed_and_persist_batch(
