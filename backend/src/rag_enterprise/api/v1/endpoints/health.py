@@ -256,15 +256,21 @@ async def system(settings: SettingsDep, response: Response) -> SystemResponse:
             provider=str(llm_raw["provider"]),
             model=str(llm_raw.get("selected_model") or llm_raw["model"]),
             selected_model=(
-                str(llm_raw["selected_model"]) if llm_raw.get("selected_model") is not None else None
+                str(llm_raw["selected_model"])
+                if llm_raw.get("selected_model") is not None
+                else None
             ),
             installed_models=[str(item) for item in (llm_raw.get("installed_models") or [])],
             timeout_seconds=float(llm_raw["timeout_seconds"]),
             ollama_version=(
-                str(llm_raw["ollama_version"]) if llm_raw.get("ollama_version") is not None else None
+                str(llm_raw["ollama_version"])
+                if llm_raw.get("ollama_version") is not None
+                else None
             ),
             selection_mode=(
-                str(llm_raw["selection_mode"]) if llm_raw.get("selection_mode") is not None else None
+                str(llm_raw["selection_mode"])
+                if llm_raw.get("selection_mode") is not None
+                else None
             ),
             reachability=(
                 str(llm_raw["reachability"]) if llm_raw.get("reachability") is not None else None
@@ -344,7 +350,7 @@ async def system_models(settings: SettingsDep, response: Response) -> SystemMode
     info = describe_llm_runtime(settings, provider)
     inventory = None
     if provider is not None and hasattr(provider, "models_inventory"):
-        inventory = provider.models_inventory()  # type: ignore[attr-defined]
+        inventory = provider.models_inventory()
 
     if inventory is None:
         inventory = {

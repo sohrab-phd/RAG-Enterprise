@@ -10,6 +10,7 @@ from sqlalchemy import Select, delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from rag_enterprise.db.repositories.base import SQLAlchemyRepository
+from rag_enterprise.db.result_utils import result_rowcount
 from rag_enterprise.knowledge.enums import FolderStatus
 from rag_enterprise.knowledge.models import Folder
 from rag_enterprise.knowledge.repositories.scope import TenantScope
@@ -130,7 +131,7 @@ class FolderRepository(SQLAlchemyRepository[Folder]):
         result = await self._session.execute(
             delete(Folder).where(Folder.knowledge_base_id == knowledge_base_id)
         )
-        return int(result.rowcount or 0)
+        return result_rowcount(result)
 
     async def hard_delete_subtree(self, folder_ids: Sequence[uuid.UUID]) -> int:
         if not folder_ids:
@@ -141,7 +142,7 @@ class FolderRepository(SQLAlchemyRepository[Folder]):
             update(Folder).where(Folder.id.in_(ids)).values(parent_folder_id=None)
         )
         result = await self._session.execute(delete(Folder).where(Folder.id.in_(ids)))
-        return int(result.rowcount or 0)
+        return result_rowcount(result)
 
     def _scoped_select(
         self,

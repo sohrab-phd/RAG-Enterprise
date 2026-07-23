@@ -11,6 +11,7 @@ from sqlalchemy import Float, Select, delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from rag_enterprise.db.repositories.base import SQLAlchemyRepository
+from rag_enterprise.db.result_utils import result_rowcount
 from rag_enterprise.indexing.enums import ChunkStatus, IndexStatus
 from rag_enterprise.indexing.models import Chunk, Embedding
 from rag_enterprise.knowledge.enums import DocumentStatus, ProcessingStatus
@@ -360,14 +361,14 @@ class EmbeddingRepository(SQLAlchemyRepository[Embedding]):
         result = await self._session.execute(
             delete(Embedding).where(Embedding.knowledge_base_id == knowledge_base_id)
         )
-        return int(result.rowcount or 0)
+        return result_rowcount(result)
 
     async def delete_all_for_document(self, document_id: uuid.UUID) -> int:
         chunk_ids = select(Chunk.id).where(Chunk.document_id == document_id)
         result = await self._session.execute(
             delete(Embedding).where(Embedding.chunk_id.in_(chunk_ids))
         )
-        return int(result.rowcount or 0)
+        return result_rowcount(result)
 
     async def delete_all_for_documents(self, document_ids: Sequence[uuid.UUID]) -> int:
         if not document_ids:
@@ -376,7 +377,7 @@ class EmbeddingRepository(SQLAlchemyRepository[Embedding]):
         result = await self._session.execute(
             delete(Embedding).where(Embedding.chunk_id.in_(chunk_ids))
         )
-        return int(result.rowcount or 0)
+        return result_rowcount(result)
 
 
 def _cosine_similarity(left: list[float], right: list[float]) -> float:

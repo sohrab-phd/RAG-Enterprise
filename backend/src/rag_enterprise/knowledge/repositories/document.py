@@ -10,6 +10,7 @@ from sqlalchemy import Select, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from rag_enterprise.db.repositories.base import SQLAlchemyRepository
+from rag_enterprise.db.result_utils import result_rowcount
 from rag_enterprise.knowledge.enums import DocumentStatus
 from rag_enterprise.knowledge.models import Document
 from rag_enterprise.knowledge.repositories.scope import TenantScope
@@ -195,13 +196,13 @@ class DocumentRepository(SQLAlchemyRepository[Document]):
         result = await self._session.execute(
             delete(Document).where(Document.folder_id.in_(list(folder_ids)))
         )
-        return int(result.rowcount or 0)
+        return result_rowcount(result)
 
     async def hard_delete_all_in_kb(self, knowledge_base_id: uuid.UUID) -> int:
         result = await self._session.execute(
             delete(Document).where(Document.knowledge_base_id == knowledge_base_id)
         )
-        return int(result.rowcount or 0)
+        return result_rowcount(result)
 
     def _scoped_select(
         self,

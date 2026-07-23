@@ -10,6 +10,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from rag_enterprise.db.repositories.base import SQLAlchemyRepository
+from rag_enterprise.db.result_utils import result_rowcount
 from rag_enterprise.generation.models import ConversationStatus, MessageRole, MessageTurn
 from rag_enterprise.generation.persistence import Conversation, Message
 from rag_enterprise.knowledge.repositories.scope import TenantScope
@@ -36,7 +37,7 @@ class ConversationRepository(SQLAlchemyRepository[Conversation]):
         result = await self._session.execute(
             delete(Conversation).where(Conversation.knowledge_base_id == knowledge_base_id)
         )
-        return int(result.rowcount or 0)
+        return result_rowcount(result)
 
 
 class MessageRepository(SQLAlchemyRepository[Message]):
@@ -82,4 +83,4 @@ class MessageRepository(SQLAlchemyRepository[Message]):
         result = await self._session.execute(
             delete(Message).where(Message.knowledge_base_id == knowledge_base_id)
         )
-        return int(result.rowcount or 0)
+        return result_rowcount(result)

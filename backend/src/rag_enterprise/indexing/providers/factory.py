@@ -119,7 +119,7 @@ def describe_embedding_runtime(
     index_alignment: dict[str, Any] | None = None,
 ) -> EmbeddingRuntimeInfo:
     """Describe the active embedding stack for inventory endpoints."""
-    provider_name = settings.embedding_backend
+    provider_name: str = settings.embedding_backend
     model = settings.embedding_model_key
     dimensions = settings.embedding_dimensions
     loaded = False
@@ -137,7 +137,7 @@ def describe_embedding_runtime(
     if index_alignment is not None:
         indexed_keys = tuple(index_alignment.get("indexed_model_keys") or ())
         indexed_dims = tuple(index_alignment.get("indexed_dimensions") or ())
-        compatible = index_alignment.get("compatible")  # type: ignore[assignment]
+        compatible = index_alignment.get("compatible")
         reindex = bool(index_alignment.get("reindex_required"))
         detail = (
             str(index_alignment["detail"]) if index_alignment.get("detail") is not None else None

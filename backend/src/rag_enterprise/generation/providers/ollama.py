@@ -295,8 +295,7 @@ class OllamaProvider(LocalProvider):
             ) from exc
         except httpx.ConnectError as exc:
             raise ModelUnavailableError(
-                f"Ollama connection refused at {self._base_url}. "
-                "Is Ollama installed and running?"
+                f"Ollama connection refused at {self._base_url}. Is Ollama installed and running?"
             ) from exc
         except httpx.HTTPStatusError as exc:
             raise ModelUnavailableError(_format_http_error(exc)) from exc

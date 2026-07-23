@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Offline Golestan ranking before/after metrics for RC3.2 report."""
 
 from __future__ import annotations
@@ -134,9 +133,7 @@ def main() -> None:
             top_k=5,
         )
         after_rank = next(
-            index
-            for index, item in enumerate(ranked, start=1)
-            if item.chunk_id == gold.chunk_id
+            index for index, item in enumerate(ranked, start=1) if item.chunk_id == gold.chunk_id
         )
         after_mrr += 1.0 / after_rank
         for k in (1, 3, 5):
@@ -151,9 +148,7 @@ def main() -> None:
                 "after_rank": after_rank,
                 "rank1": diagnostics.to_dict()["rankings"][0],
                 "rank2": (
-                    diagnostics.to_dict()["rankings"][1]
-                    if len(diagnostics.rankings) > 1
-                    else None
+                    diagnostics.to_dict()["rankings"][1] if len(diagnostics.rankings) > 1 else None
                 ),
             }
         )

@@ -10,6 +10,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from rag_enterprise.db.repositories.base import SQLAlchemyRepository
+from rag_enterprise.db.result_utils import result_rowcount
 from rag_enterprise.knowledge.models import UploadSession
 from rag_enterprise.knowledge.repositories.scope import TenantScope
 
@@ -64,13 +65,13 @@ class UploadSessionRepository(SQLAlchemyRepository[UploadSession]):
         result = await self._session.execute(
             delete(UploadSession).where(UploadSession.knowledge_base_id == knowledge_base_id)
         )
-        return int(result.rowcount or 0)
+        return result_rowcount(result)
 
     async def delete_all_for_document(self, document_id: uuid.UUID) -> int:
         result = await self._session.execute(
             delete(UploadSession).where(UploadSession.document_id == document_id)
         )
-        return int(result.rowcount or 0)
+        return result_rowcount(result)
 
     async def delete_all_for_documents(self, document_ids: Sequence[uuid.UUID]) -> int:
         if not document_ids:
@@ -78,4 +79,4 @@ class UploadSessionRepository(SQLAlchemyRepository[UploadSession]):
         result = await self._session.execute(
             delete(UploadSession).where(UploadSession.document_id.in_(list(document_ids)))
         )
-        return int(result.rowcount or 0)
+        return result_rowcount(result)

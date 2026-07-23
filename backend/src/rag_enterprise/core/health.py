@@ -363,9 +363,13 @@ async def build_system_inventory(settings: Settings) -> dict[str, Any]:
             evaluation_run_count = 0
 
     llm = describe_llm_runtime(settings, container.llm_provider if container else None)
-    if container is not None and di_ok and container.embedding_provider is not None:
-        if container.session_factory is not None:
-            await _refresh_embedding_index_alignment(container)
+    if (
+        container is not None
+        and di_ok
+        and container.embedding_provider is not None
+        and container.session_factory is not None
+    ):
+        await _refresh_embedding_index_alignment(container)
     embedding = describe_embedding_runtime(
         settings,
         container.embedding_provider if container else None,

@@ -46,7 +46,7 @@ def describe_llm_runtime(
 ) -> LLMRuntimeInfo:
     """Describe the active LLM for inventory endpoints."""
     if provider is not None and hasattr(provider, "runtime_info"):
-        info = provider.runtime_info(backend=settings.llm_backend)  # type: ignore[attr-defined]
+        info = provider.runtime_info(backend=settings.llm_backend)
         if isinstance(info, LLMRuntimeInfo):
             return info
     return LLMRuntimeInfo(
