@@ -9,9 +9,11 @@
 | Field | Value |
 | --- | --- |
 | Current branch | `main` |
-| Current commit (pre-final report commit) | see Final tag target below |
-| Remote tracking | `origin/main` (local only; **not pushed** as part of this task) |
-| Working tree at verification | Clean after release-doc commit |
+| Current commit | `2afb297f2471742dc9a86d0445c7b5219925bd0b` |
+| Short commit | `2afb297` |
+| Commit subject | `docs(release): record final v1.0.0 tag commit in release report` |
+| Remote tracking | `origin/main` — local branch is **ahead by commits**; **not pushed** |
+| Working tree | Clean |
 
 ## Tag created
 
@@ -20,7 +22,8 @@
 | Tag | `v1.0.0` |
 | Type | Annotated |
 | Message | `Enterprise Persian RAG System Version 1.0` |
-| Prior tag note | An older local `v1.0.0` (2026-07-15, RC1.6 alignment) was replaced so the tag points at the completed V1.0 codebase |
+| Tagged commit | `2afb297f2471742dc9a86d0445c7b5219925bd0b` |
+| Prior tag note | Older local `v1.0.0` (2026-07-15, RC1.6) was replaced to point at completed V1.0 |
 
 ## Release summary
 
@@ -65,12 +68,10 @@ Version metadata already aligned at `1.0.0` in:
 
 ## Final tag target
 
-Filled after tagging:
-
 | Field | Value |
 | --- | --- |
 | Branch | `main` |
-| Commit | _pending tag step_ |
+| Commit | `2afb297f2471742dc9a86d0445c7b5219925bd0b` (`2afb297`) |
 | Tag | `v1.0.0` |
 | Tag message | `Enterprise Persian RAG System Version 1.0` |
 
