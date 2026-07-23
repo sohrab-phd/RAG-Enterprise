@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import time
 import uuid
 from dataclasses import dataclass
@@ -18,6 +19,13 @@ from rag_enterprise.generation.citations import (
     salvage_top_chunk_citation,
     strip_question_echo,
     validate_citations,
+)
+from rag_enterprise.generation.evidence_selection import (
+    EvidenceLabel,
+    EvidenceSelectionResult,
+    EvidenceSignals,
+    ScoredEvidence,
+    select_evidence,
 )
 from rag_enterprise.generation.exceptions import (
     GenerationError,
@@ -148,10 +156,47 @@ class GenerationService:
             conversation_id = await self._persist_turn(request, conversation_id, question, result)
             return result.model_copy(update={"conversation_id": conversation_id})
 
+        # RC3.6: deterministic evidence selection after retrieval, before PromptBuilder.
+        # Set RAG_EVIDENCE_SELECTION=0 only for local before/after benchmarks.
+        if _evidence_selection_enabled():
+            evidence = select_evidence(question=question, chunks=list(search.results))
+        else:
+            evidence = _passthrough_evidence(question=question, chunks=list(search.results))
+        logger.info(
+            "evidence_selected",
+            extra={
+                "selected_primary": evidence.selected_primary_ids,
+                "selected_support": evidence.selected_support_ids,
+                "discarded": evidence.discarded_ids,
+                "conflict": evidence.conflict,
+                "conflict_reason": evidence.conflict_reason,
+                "selection_latency_ms": round(evidence.selection_latency_ms, 3),
+                "candidate_count": len(search.results),
+                "prompt_chunk_count": len(evidence.chunks_for_prompt),
+            },
+        )
+        if not evidence.chunks_for_prompt:
+            result = GenerationResult(
+                status=GenerationStatus.ABSTAINED,
+                answer=v1.abstain_user_message(response_language),
+                abstention_reason="insufficient_evidence",
+                retrieved_chunks=list(search.results),
+                retrieved_chunk_ids=chunk_ids,
+                prompt_template_version=self._prompt_builder.template_version,
+                conversation_id=conversation_id,
+                warnings=[*search.warnings, "evidence_selection_empty"],
+            )
+            logger.info(
+                "generation_abstained",
+                extra={"abstention_reason": "insufficient_evidence", "cause": "evidence_empty"},
+            )
+            conversation_id = await self._persist_turn(request, conversation_id, question, result)
+            return result.model_copy(update={"conversation_id": conversation_id})
+
         try:
             built = self._prompt_builder.build(
                 question=question,
-                chunks=list(search.results),
+                chunks=evidence.chunks_for_prompt,
                 history=history,
                 language_hint=request.language_hint,
             )
@@ -395,3 +440,56 @@ class GenerationService:
             )
             await session.commit()
             return conversation.id
+
+
+def _evidence_selection_enabled() -> bool:
+    """Benchmark escape hatch — default on. Not part of the public API."""
+    return os.environ.get("RAG_EVIDENCE_SELECTION", "1").strip().lower() not in {
+        "0",
+        "false",
+        "off",
+        "no",
+    }
+
+
+def _passthrough_evidence(
+    *,
+    question: str,
+    chunks: list[object],
+) -> EvidenceSelectionResult:
+    """RC3.5-compatible path: send all retrieved chunks to PromptBuilder."""
+    from rag_enterprise.retrieval.models import RetrievedChunk
+
+    typed = [chunk for chunk in chunks if isinstance(chunk, RetrievedChunk)]
+    scored = tuple(
+        ScoredEvidence(
+            chunk=chunk,
+            label=EvidenceLabel.PRIMARY,
+            selection_score=float(chunk.score),
+            selection_reason="passthrough_disabled",
+            signals=EvidenceSignals(
+                lexical_overlap=0.0,
+                persian_keyword_overlap=0.0,
+                heading_similarity=0.0,
+                faq_question_similarity=0.0,
+                exact_phrase=0.0,
+                numeric_agreement=0.0,
+                named_entities=0.0,
+                section_proximity=0.0,
+                rc32_ranking_score=float(chunk.score),
+                hybrid_rank_score=1.0 / (1.0 + index),
+            ),
+            retrieval_rank=index + 1,
+        )
+        for index, chunk in enumerate(typed)
+    )
+    return EvidenceSelectionResult(
+        query=question,
+        primary=tuple(typed),
+        supplementary=(),
+        discarded=(),
+        scored=scored,
+        conflict=False,
+        conflict_reason=None,
+        selection_latency_ms=0.0,
+    )
