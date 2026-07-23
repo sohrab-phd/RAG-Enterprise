@@ -18,6 +18,7 @@ linked from there. Direct shortcuts:
 | Guide | Link |
 | --- | --- |
 | Project Overview | [docs/OVERVIEW.md](docs/OVERVIEW.md) |
+| Architecture | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | Architecture Summary | [docs/ARCHITECTURE_SUMMARY.md](docs/ARCHITECTURE_SUMMARY.md) |
 | Feature Map | [docs/FEATURE_MAP.md](docs/FEATURE_MAP.md) |
 | Development Guide | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) |

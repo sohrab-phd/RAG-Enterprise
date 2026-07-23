@@ -1,0 +1,6 @@
+﻿flowchart TD
+  D[Document version bytes] --> P[Parser<br/>TXT · PDF · DOCX]
+  P --> N[Persian normalization]
+  N --> C[Chunking]
+  C --> E[Embedding provider]
+  E --> V[(Vector storage<br/>PostgreSQL + pgvector)]

@@ -1,0 +1,6 @@
+﻿flowchart TD
+  R[Retrieved ranked chunks] --> S[Evidence selection<br/>PRIMARY / SUPPLEMENTARY / IRRELEVANT]
+  S --> P[PromptBuilder + context assembly]
+  P --> L[LLM completion<br/>Ollama]
+  L --> V[Citation validation<br/>abstain / salvage rules]
+  V --> X[API response<br/>answer · citations · status]

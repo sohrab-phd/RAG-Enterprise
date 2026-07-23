@@ -22,8 +22,8 @@ Every major Version 1.0.0 document is reachable in **one click** from this page,
 
 | Guide | Purpose |
 | --- | --- |
-| [Architecture Summary](ARCHITECTURE_SUMMARY.md) | V1.0.0 system picture + ADR map (links only) |
-| [Architecture notes](ARCHITECTURE.md) | Evolving runtime notes (backend lifecycle, health) |
+| [Architecture](ARCHITECTURE.md) | Version 1.0 system architecture, flows, stack, and decisions (portfolio-ready) |
+| [Architecture Summary](ARCHITECTURE_SUMMARY.md) | One-page V1.0.0 map + ADR index |
 | [Feature Map](FEATURE_MAP.md) | Specs 001–008 and backend module docs |
 | [Product Requirements](PRD.md) | Product skeleton (not a living feature inventory) |
 | [Tech Stack](TECH_STACK.md) | Adopted Version 1.0.0 stack (+ Version 2 notes) |

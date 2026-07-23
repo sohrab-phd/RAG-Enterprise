@@ -1,0 +1,10 @@
+﻿flowchart TD
+  Q[User question] --> N[Persian normalization]
+  N --> E[Query embedding]
+  E --> H[Hybrid retrieval<br/>Dense + BM25 + RRF]
+  H --> R[RC3.2 ranking calibration]
+  R --> S[RC3.6 evidence selection]
+  S --> P[PromptBuilder]
+  P --> O[Ollama LLM]
+  O --> A[Grounded answer]
+  A --> C[Citation markers + validation]

@@ -1,0 +1,43 @@
+﻿flowchart TB
+  subgraph Client["Operator surface"]
+    FE["Frontend<br/>React + TypeScript + Vite"]
+  end
+
+  subgraph API["Delivery"]
+    BE["Backend API<br/>FastAPI /api/v1"]
+  end
+
+  subgraph App["Application"]
+    CQRS["CQRS-lite<br/>Commands · Queries · Handlers"]
+    APP["Application services<br/>Knowledge · Pipeline · Retrieval · Generation"]
+  end
+
+  subgraph Domain["Domain and module services"]
+    DOM["Bounded contexts<br/>Knowledge · Indexing · Retrieval · Generation · Evaluation"]
+  end
+
+  subgraph Infra["Infrastructure adapters"]
+    DBAD["SQLAlchemy / Alembic"]
+    FS["Local filesystem storage"]
+    EMB["Embedding provider<br/>BGE-M3"]
+    LLM["LLM provider<br/>Ollama"]
+  end
+
+  subgraph Data["Data and models"]
+    PG[("PostgreSQL")]
+    PV[("pgvector")]
+    OL[("Ollama local LLM")]
+  end
+
+  FE -->|HTTP JSON| BE
+  BE --> CQRS
+  CQRS --> APP
+  APP --> DOM
+  DOM --> DBAD
+  DOM --> FS
+  DOM --> EMB
+  DOM --> LLM
+  DBAD --> PG
+  DBAD --> PV
+  LLM --> OL
+  EMB --> PG

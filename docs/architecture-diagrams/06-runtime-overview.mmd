@@ -1,0 +1,34 @@
+﻿flowchart TB
+  subgraph Operators
+    UI[Operator console]
+  end
+
+  subgraph BackendRuntime["Backend runtime"]
+    API["/api/v1"]
+    LIFE[Lifespan + AppContainer]
+    KNOW[Knowledge / Pipeline]
+    RET[Retrieval stack]
+    GEN[Generation stack]
+  end
+
+  subgraph Stores
+    PG[(PostgreSQL + pgvector)]
+    FILES[Filesystem uploads]
+  end
+
+  subgraph Models
+    ST[BGE-M3 embeddings]
+    OL[Ollama]
+  end
+
+  UI --> API
+  API --> LIFE
+  LIFE --> KNOW
+  LIFE --> RET
+  LIFE --> GEN
+  KNOW --> PG
+  KNOW --> FILES
+  RET --> PG
+  RET --> ST
+  GEN --> OL
+  GEN --> RET

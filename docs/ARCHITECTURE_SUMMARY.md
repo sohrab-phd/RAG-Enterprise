@@ -2,7 +2,8 @@
 
 > **Purpose:** One-page Version 1.0.0 architecture map.  
 > **Release:** 1.0.0  
-> **Rule:** Summarize with links—do not copy ADR or spec prose here.
+> **Rule:** Summarize with links—do not copy ADR or spec prose here.  
+> **Full narrative:** [ARCHITECTURE.md](ARCHITECTURE.md) (system flows, diagrams, decisions).
 
 ## Purpose
 
@@ -39,10 +40,13 @@ Storage: [Local File Storage](backend/LOCAL_FILE_STORAGE.md)
 ```text
 Create/Publish KB
   → Upload (local filesystem)
-  → Process & Index (002 process → 003 chunk → 004 embed)
-  → 005 Retrieve → 006 Generate (+ citations)
-  → 007 Offline evaluation (+ Evaluation Dashboard reads)
+  → Process & Index (parse → normalize → chunk → embed)
+  → Retrieve (hybrid dense + BM25 + RRF → RC3.2 ranking)
+  → Evidence selection (RC3.6) → Generate (+ citations)
+  → Offline evaluation (+ Evaluation Dashboard reads)
 ```
+
+Full diagrams and rationale: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 Operator orchestration:
 [Process & Index](backend/PROCESS_AND_INDEX.md) ·
