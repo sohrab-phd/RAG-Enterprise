@@ -9,11 +9,11 @@
 | Field | Value |
 | --- | --- |
 | Current branch | `main` |
-| Current commit | `2afb297f2471742dc9a86d0445c7b5219925bd0b` |
-| Short commit | `2afb297` |
-| Commit subject | `docs(release): record final v1.0.0 tag commit in release report` |
-| Remote tracking | `origin/main` — local branch is **ahead by commits**; **not pushed** |
-| Working tree | Clean |
+| Release tag | `v1.0.0` (annotated) |
+| Tag message | `Enterprise Persian RAG System Version 1.0` |
+| Resolve commit | `git rev-parse v1.0.0^{commit}` |
+| Remote tracking | `origin/main` — local `main` is ahead; **not pushed** |
+| Working tree | Clean at release preparation completion |
 
 ## Tag created
 
@@ -22,7 +22,6 @@
 | Tag | `v1.0.0` |
 | Type | Annotated |
 | Message | `Enterprise Persian RAG System Version 1.0` |
-| Tagged commit | `2afb297f2471742dc9a86d0445c7b5219925bd0b` |
 | Prior tag note | Older local `v1.0.0` (2026-07-15, RC1.6) was replaced to point at completed V1.0 |
 
 ## Release summary
@@ -71,9 +70,9 @@ Version metadata already aligned at `1.0.0` in:
 | Field | Value |
 | --- | --- |
 | Branch | `main` |
-| Commit | `2afb297f2471742dc9a86d0445c7b5219925bd0b` (`2afb297`) |
 | Tag | `v1.0.0` |
 | Tag message | `Enterprise Persian RAG System Version 1.0` |
+| Commit | Resolve with `git rev-parse v1.0.0^{commit}` (must match `HEAD` when tree is clean) |
 
 ## Related artifacts
 
