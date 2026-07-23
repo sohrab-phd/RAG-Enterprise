@@ -1,0 +1,238 @@
+﻿RAG Project/
+├── .github/
+│   ├── workflows/
+│   │   └── ci.yml
+│   └── PULL_REQUEST_TEMPLATE.md
+├── agents/
+│   ├── ai-engineer.md
+│   ├── architect.md
+│   ├── backend.md
+│   ├── database.md
+│   ├── devops.md
+│   ├── frontend.md
+│   ├── reviewer.md
+│   └── security.md
+├── backend/
+│   ├── alembic/
+│   │   ├── versions/
+│   │   └── env.py
+│   ├── src/
+│   │   └── rag_enterprise/
+│   ├── tests/
+│   │   ├── api/
+│   │   ├── application/
+│   │   ├── chunking/
+│   │   ├── core/
+│   │   ├── db/
+│   │   ├── e2e/
+│   │   ├── evaluation/
+│   │   ├── generation/
+│   │   ├── helpers/
+│   │   ├── indexing/
+│   │   ├── knowledge/
+│   │   ├── pipeline/
+│   │   ├── processing/
+│   │   ├── retrieval/
+│   │   ├── tools/
+│   │   ├── __init__.py
+│   │   └── conftest.py
+│   ├── tools/
+│   │   ├── persian_rag_benchmark/
+│   │   ├── __init__.py
+│   │   ├── pdf_extraction_diagnostics.py
+│   │   ├── rc33_golestan_eval.py
+│   │   ├── rc34_generation_eval.py
+│   │   ├── rc35_hybrid_eval.py
+│   │   ├── rc36_evidence_eval.py
+│   │   └── rc37_api_smoke.py
+│   ├── .python-version
+│   ├── alembic.ini
+│   ├── pyproject.toml
+│   ├── README.md
+│   └── uv.lock
+├── demo/
+│   ├── evaluation/
+│   │   ├── evaluation.jsonl
+│   │   ├── ID_MAP.md
+│   │   ├── manifest.json
+│   │   └── rc31_false_abstain_regression.jsonl
+│   ├── knowledge/
+│   │   ├── 01-employee-handbook-fa.txt
+│   │   ├── 02-leave-policy-fa.txt
+│   │   ├── 03-remote-work-policy-fa.txt
+│   │   └── 04-travel-expense-policy-fa.txt
+│   ├── questions/
+│   │   └── suggested-questions-fa.md
+│   └── README.md
+├── docs/
+│   ├── adr/
+│   │   ├── 001-monorepo-architecture.md
+│   │   ├── 002-backend-framework-selection.md
+│   │   ├── 003-database-selection.md
+│   │   ├── 004-frontend-selection.md
+│   │   └── 005-ai-platform-principles.md
+│   ├── backend/
+│   │   ├── API_FOUNDATION.md
+│   │   ├── APPLICATION_LAYER.md
+│   │   ├── CONFIGURATION.md
+│   │   ├── E2E_HAPPY_PATH.md
+│   │   ├── EMBEDDINGS_AND_RETRIEVAL.md
+│   │   ├── EVALUATION_FRAMEWORK.md
+│   │   ├── KNOWLEDGE_MANAGEMENT.md
+│   │   ├── LLM_PROVIDER_LAYER.md
+│   │   ├── LOCAL_FILE_STORAGE.md
+│   │   ├── OLLAMA.md
+│   │   ├── OPERATIONAL_HEALTH.md
+│   │   ├── PERSISTENCE_LAYER.md
+│   │   ├── PROCESS_AND_INDEX.md
+│   │   └── RAG_GENERATION.md
+│   ├── data/
+│   │   ├── AGGREGATES.md
+│   │   ├── DATA_ARCHITECTURE.md
+│   │   ├── DATA_LIFECYCLE.md
+│   │   ├── EVENT_MODEL.md
+│   │   ├── INDEXING_STRATEGY.md
+│   │   ├── RELATIONSHIPS.md
+│   │   └── STORAGE_STRATEGY.md
+│   ├── domain/
+│   │   ├── BOUNDED_CONTEXTS.md
+│   │   ├── DOMAIN_GLOSSARY.md
+│   │   ├── DOMAIN_MODEL.md
+│   │   ├── ENTITY_LIFECYCLE.md
+│   │   ├── MULTI_TENANCY.md
+│   │   ├── OWNERSHIP_MODEL.md
+│   │   └── PERMISSION_MODEL.md
+│   ├── ARCHITECTURE.md
+│   ├── ARCHITECTURE_SUMMARY.md
+│   ├── CONTRIBUTING.md
+│   ├── DECISIONS.md
+│   ├── DEMO_GUIDE.md
+│   ├── DEPLOYMENT.md
+│   ├── DEVELOPMENT.md
+│   ├── DEVELOPMENT_WORKFLOW.md
+│   ├── EVALUATION_GUIDE.md
+│   ├── FEATURE_MAP.md
+│   ├── FIRST_RUN.md
+│   ├── OVERVIEW.md
+│   ├── PRD.md
+│   ├── README.md
+│   ├── ROADMAP.md
+│   └── TECH_STACK.md
+├── frontend/
+│   ├── public/
+│   │   ├── favicon.svg
+│   │   └── icons.svg
+│   ├── src/
+│   │   ├── assets/
+│   │   ├── components/
+│   │   ├── features/
+│   │   ├── hooks/
+│   │   ├── lib/
+│   │   ├── pages/
+│   │   ├── routes/
+│   │   ├── test/
+│   │   ├── App.test.tsx
+│   │   ├── App.tsx
+│   │   ├── index.css
+│   │   ├── main.tsx
+│   │   └── vite-env.d.ts
+│   ├── .gitignore
+│   ├── .oxlintrc.json
+│   ├── .prettierignore
+│   ├── .prettierrc
+│   ├── components.json
+│   ├── eslint.config.js
+│   ├── index.html
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── README.md
+│   ├── tsconfig.app.json
+│   ├── tsconfig.json
+│   ├── tsconfig.node.json
+│   └── vite.config.ts
+├── infrastructure/
+│   └── README.md
+├── scripts/
+│   ├── dev-up.ps1
+│   ├── dev-up.sh
+│   ├── lint-and-test.sh
+│   └── verify-doc-links.py
+├── specs/
+│   ├── 001-knowledge-management/
+│   │   ├── ACCEPTANCE.md
+│   │   ├── API.md
+│   │   ├── DATABASE.md
+│   │   ├── README.md
+│   │   ├── VALIDATION.md
+│   │   └── WORKFLOWS.md
+│   ├── 002-document-processing/
+│   │   └── SPEC.md
+│   ├── 003-chunking/
+│   │   └── SPEC.md
+│   ├── 004-embeddings/
+│   │   └── SPEC.md
+│   ├── 005-retrieval/
+│   │   └── SPEC.md
+│   ├── 006-rag-generation/
+│   │   └── SPEC.md
+│   ├── 007-evaluation-framework/
+│   │   ├── ACCEPTANCE.md
+│   │   ├── DATASET.md
+│   │   ├── EXPERIMENTS.md
+│   │   ├── METRICS.md
+│   │   └── README.md
+│   ├── 008-frontend/
+│   │   ├── ACCEPTANCE.md
+│   │   ├── API_MAPPING.md
+│   │   ├── CHAT.md
+│   │   ├── COMPONENTS.md
+│   │   ├── EVALUATION.md
+│   │   ├── EXPERIMENTS.md
+│   │   ├── KNOWLEDGE.md
+│   │   ├── NAVIGATION.md
+│   │   ├── README.md
+│   │   ├── RESPONSIVE.md
+│   │   └── SETTINGS.md
+│   ├── authentication.md
+│   ├── document-ingestion.md
+│   └── README.md
+├── tests/
+│   └── README.md
+├── tools/
+│   ├── dev_launcher/
+│   │   ├── __init__.py
+│   │   ├── bootstrap.py
+│   │   ├── checks.py
+│   │   ├── console.py
+│   │   ├── docker.py
+│   │   ├── executil.py
+│   │   ├── launcher.py
+│   │   ├── ports.py
+│   │   ├── processes.py
+│   │   ├── test_ports.py
+│   │   ├── test_vite_url.py
+│   │   └── verify_e2e.py
+│   └── __init__.py
+├── .env.example
+├── .gitignore
+├── .markdownlint-cli2.jsonc
+├── BUG_FIXES.md
+├── CHANGELOG.md
+├── docker-compose.yml
+├── LICENSE
+├── PERFORMANCE_REPORT.md
+├── RC3.1_FALSE_ABSTAIN_REPORT.md
+├── RC3.2_RETRIEVAL_RANKING_REPORT.md
+├── RC3.3_PDF_EXTRACTION_REPORT.md
+├── RC3.4_GENERATION_REPORT.md
+├── RC3.5_HYBRID_RETRIEVAL_REPORT.md
+├── RC3.6_EVIDENCE_SELECTION_REPORT.md
+├── RC3.7_VALIDATION_REPORT.md
+├── README.md
+├── REGRESSION_MATRIX.md
+├── REGRESSION_TEST_REPORT.md
+├── RELEASE_CHECKLIST.md
+├── RELEASE_NOTES.md
+├── REPOSITORY_CLEANUP_REPORT.md
+├── REPOSITORY_TREE.txt
+└── run.py

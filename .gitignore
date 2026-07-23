@@ -87,6 +87,10 @@ eval-artifacts/
 backend/storage/
 backend/eval-artifacts/
 backend/benchmark-artifacts/
+backend/.tmp-*/
+frontend/dist/
+frontend/coverage/
+frontend/.vite/
 
 # Developer launcher stop signal (runtime)
 .dev_launcher_stop
